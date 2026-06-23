@@ -15,9 +15,9 @@ import threading
 import time
 from collections import deque
 
-from .config import ROOT
+from .config import DATA_DIR
 
-USAGE_FILE = ROOT / "usage.json"
+USAGE_FILE = DATA_DIR / "usage.json"
 _LOCK = threading.Lock()
 _local = threading.local()
 RECENT: deque = deque(maxlen=400)

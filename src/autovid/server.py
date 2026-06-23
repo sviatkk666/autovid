@@ -36,7 +36,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import usage
 from .channel import CHANNELS_DIR, Channel
-from .config import ROOT, env, load_config
+from .config import DATA_DIR, ROOT, env, load_config
 from .modules import memory_store
 from .providers.ai33 import ai33_credits
 from .providers.llm import available_models
@@ -62,7 +62,7 @@ from .project import PROJECTS_DIR, Project, Scene
 
 WEB_DIR = Path(__file__).parent / "web"
 CFG = load_config()
-SETTINGS_FILE = ROOT / "settings.json"
+SETTINGS_FILE = DATA_DIR / "settings.json"
 AGENT_KEYS = ["screenwriter", "humanizer", "art_director", "voice_director",
               "sound_designer", "showrunner", "producer", "strategist"]
 
@@ -282,8 +282,9 @@ def _load(slug: str) -> Project:
 
 app = FastAPI(title="autovid dashboard")
 
-if PROJECTS_DIR.exists():
-    app.mount("/projects", StaticFiles(directory=str(PROJECTS_DIR)), name="projects")
+# Ensure the data dir exists so the static mount works even on a fresh volume.
+PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/projects", StaticFiles(directory=str(PROJECTS_DIR)), name="projects")
 
 
 @app.get("/")

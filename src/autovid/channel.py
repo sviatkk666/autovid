@@ -16,9 +16,9 @@ import os
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
-from .config import ROOT
+from .config import DATA_DIR
 
-CHANNELS_DIR = ROOT / "channels"
+CHANNELS_DIR = DATA_DIR / "channels"
 
 
 @dataclass

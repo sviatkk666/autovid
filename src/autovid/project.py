@@ -11,9 +11,9 @@ import os
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
-from .config import ROOT
+from .config import DATA_DIR
 
-PROJECTS_DIR = ROOT / "projects"
+PROJECTS_DIR = DATA_DIR / "projects"
 
 
 @dataclass

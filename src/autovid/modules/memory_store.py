@@ -23,11 +23,11 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from ..config import ROOT
+from ..config import DATA_DIR
 from ..project import Project
 from ..providers.embeddings import cosine, get_embedder
 
-MEMORY_PATH = ROOT / "content_memory.json"
+MEMORY_PATH = DATA_DIR / "content_memory.json"
 # The dashboard runs director jobs concurrently (and they all write this one
 # file), so serialize the whole read-modify-write.
 _LOCK = threading.Lock()
