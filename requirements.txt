@@ -8,6 +8,10 @@ openai>=1.40
 # Ollama is used via its local HTTP API (no SDK needed) + 'requests'
 requests>=2.31
 
+# Autoposting bridge: upload assets to Cloudflare R2 (S3-compatible) for the CRM.
+# Only needed for `push-channel` / `push` (the crm_push call uses 'requests').
+boto3>=1.34
+
 # TTS stage
 elevenlabs>=1.0          # cloud voices (needs ELEVENLABS_API_KEY)
 # Piper (local) is a standalone binary, not a pip package: https://github.com/rhasspy/piper

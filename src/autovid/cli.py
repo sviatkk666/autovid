@@ -283,6 +283,66 @@ def cmd_brandkit(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_push_channel(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+
+    try:
+        channel = Channel.load(args.slug)
+    except FileNotFoundError:
+        print(f"error: no channel '{args.slug}' (create it in the dashboard first).", file=sys.stderr)
+        return 1
+
+    # Ensure a brand kit exists (persona + avatar) before pushing.
+    if not channel.persona_name or not channel.avatar_path:
+        try:
+            channel = make_brand_kit(channel, cfg, force=False)
+        except (RuntimeError, ValueError) as e:
+            print(f"error: brand kit generation failed: {e}", file=sys.stderr)
+            return 1
+
+    from .modules.crm_push import ingest_channel
+    from .modules.r2_upload import upload_file
+
+    try:
+        avatar_url = (upload_file(channel.dir / channel.avatar_path, f"channels/{channel.slug}/avatar.png")
+                      if channel.avatar_path else None)
+        banner_url = (upload_file(channel.dir / channel.banner_path, f"channels/{channel.slug}/banner.png")
+                      if channel.banner_path else None)
+        payload = {
+            "channelSlug": channel.slug,
+            "name": channel.name or channel.slug,
+            "handle": channel.handle,
+            "niche": channel.niche,
+            "language": channel.language,
+            "region": channel.region,
+            "description": channel.description,
+            "rules": channel.rules,
+            "audience": channel.audience,
+            "keywords": channel.keywords,
+            "personaName": channel.persona_name,
+            "suggestedEmail": channel.suggested_email,
+            "defaultCategory": channel.default_category,
+            "voice": channel.voice,
+            "visualNotes": channel.visual_notes,
+            "thumbnailStyle": channel.thumbnail_style,
+            "avatarUrl": avatar_url,
+            "bannerUrl": banner_url,
+            "signature": {
+                "intro": channel.intro,
+                "outro": channel.outro,
+                "cta": channel.cta,
+                "catchphrase": channel.catchphrase,
+            },
+        }
+        ingest_channel(payload)
+    except (RuntimeError, FileNotFoundError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+    print(f"[push-channel] pushed '{channel.slug}' to the CRM", file=sys.stderr)
+    return 0
+
+
 def _apply_run_overrides(cfg: dict, args: argparse.Namespace) -> None:
     """Apply --tts-provider / --image-provider onto the loaded config in place."""
     if getattr(args, "tts_provider", None):
@@ -659,6 +719,10 @@ def main(argv: list[str] | None = None) -> int:
     bk.add_argument("slug", help="channel slug (folder under channels/)")
     bk.add_argument("--force", action="store_true", help="regenerate even if a kit exists")
     bk.set_defaults(func=cmd_brandkit)
+
+    pc = sub.add_parser("push-channel", help="upload the channel brand kit (avatar/banner→R2) + register it in the CRM")
+    pc.add_argument("slug", help="channel slug (folder under channels/)")
+    pc.set_defaults(func=cmd_push_channel)
 
     r = sub.add_parser("run", help="all-in-one: [generate ->] humanize -> parse -> tts -> images -> montage")
     r.add_argument("input", nargs="?", default=None, help="input script (.txt/.md); omit if using --topic")
