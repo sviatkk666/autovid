@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import copy
 import math
+import re
 
 from ..project import Project, Scene
 from ..providers.llm import LLM, agent_model, build_llm, get_llm
@@ -179,6 +180,30 @@ def _art_director(script: str, cfg: dict, llm: LLM, channel_profile: str = "") -
     if not scenes:
         raise ValueError("art director produced zero usable scenes")
     return scenes
+
+
+def clean_title(brief: str, script: str, cfg: dict, llm: LLM | None = None) -> str:
+    """A short, punchy video title — never the whole production brief.
+
+    If the brief is already a short single-line title, keep it. Otherwise (it's a
+    long multi-sentence brief) write a real title from the script; on any failure
+    fall back to the brief's first clause, capped.
+    """
+    raw = " ".join((brief or "").split()).strip()
+    if raw and len(raw) <= 70 and not re.search(r"[.\n:]| - |—|use the |verbatim", raw, re.I):
+        return raw
+    try:
+        t = (llm or get_llm(cfg, "screenwriter")).complete(
+            "You write ONE concise, punchy YouTube video title. Output ONLY the title "
+            "— no quotes, no label, max 65 characters.",
+            f"Script / brief:\n{(script or brief)[:2000]}\n\nThe title:").strip()
+        t = t.strip().strip('"').splitlines()[0].strip()
+        if t:
+            return t[:80]
+    except Exception:  # noqa: BLE001 — never block a build on the title
+        pass
+    first = re.split(r"[.:\n—]| - ", raw)[0].strip()
+    return (first or raw)[:70]
 
 
 def split_and_direct(script: str, cfg: dict, channel_profile: str = "",
@@ -368,8 +393,10 @@ def build_blueprint(
         log(f"[director] WARNING: scene text diverges from script "
             f"({len(joined)} vs {len(src)} chars) — narration may have been altered.")
 
+    # The brief may be a long paragraph; derive a clean, short title from the script.
+    clean = (idea.title.strip() if idea and idea.title else clean_title(title, final_script, cfg))
     project = Project(
-        slug="", title=title, aspect=cfg.get("_aspect", "16:9"),
+        slug="", title=clean, aspect=cfg.get("_aspect", "16:9"),
         script_raw=script, script_human=human, scenes=scenes,
         channel=channel_slug, theme=theme,
         source_idea={"title": idea.title, "hook": idea.hook, "angle": idea.angle, "theme": theme}

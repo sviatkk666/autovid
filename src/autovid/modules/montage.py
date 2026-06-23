@@ -83,7 +83,9 @@ def _motion_filter(animation: str, w: int, h: int, fps: int, duration: float,
     a = (animation or "auto").strip().lower().replace("_", "-").replace("ken-burns", "kenburns")
     frames = max(2, round(duration * fps))
     n1 = max(1, frames - 1)
-    sw, sh = w * 4, h * 4
+    # Supersample 2x so the slow zoom stays crisp. (Was 4x — that buffered ~8K
+    # frames in zoompan and OOM-killed heavy renders on small hosts → HTTP 502.)
+    sw, sh = w * 2, h * 2
     cover = f"scale={sw}:{sh}:force_original_aspect_ratio=increase,crop={sw}:{sh}"
     inc = zoom / n1
     zin, zout = f"1+{inc:.6f}*on", f"{1 + zoom:.6f}-{inc:.6f}*on"

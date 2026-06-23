@@ -505,6 +505,24 @@ def create_project(body: dict = Body(...)):
 
 # --- pipeline steps ----------------------------------------------------------
 
+_STEP_DESC = {
+    "humanize": "rewriting the script so it sounds human",
+    "parse": "splitting into scenes + art-directing visuals, motion & transitions",
+    "tts": "voicing each scene",
+    "images": "searching a stock photo per scene",
+    "imagegen": "AI-generating images",
+    "chart": "drawing charts/diagrams",
+    "text_card": "designing typographic cards",
+    "photo_edit": "stock photo + HTML polish",
+    "visuals": "making each scene's image (search / chart / text-card / AI)",
+    "montage": "rendering the video — clips, camera motion & transitions",
+    "audiomix": "mixing SFX cues + a music bed",
+    "captions": "transcribing the narration to subtitles (Whisper)",
+    "thumbnail": "designing thumbnail variants",
+    "publish": "writing the YouTube title, description, tags & chapters",
+}
+
+
 def _step_cfg(step: str, provider: str | None) -> dict:
     cfg = copy.deepcopy(CFG)
     if not provider or provider == "auto":
@@ -529,6 +547,9 @@ def run_step(slug: str, step: str, body: dict = Body(default={})):
 
     def work():
         p = Project.load(slug)  # reload fresh inside the lock
+        scope = f" (scene{'s' if only and len(only) > 1 else ''} {', '.join(map(str, sorted(only)))})" if only else ""
+        print(f"▶ {step} — {_STEP_DESC.get(step, step)}{scope}{' [force]' if force else ''}…", file=sys.stderr)
+        _t0 = time.time()
         if step == "humanize":
             p.script_human = humanize_text(p.script_raw, cfg)
             p.save()
@@ -573,6 +594,7 @@ def run_step(slug: str, step: str, body: dict = Body(default={})):
             make_publish_kit(p, cfg, channel_profile=prof, force=force)
         else:
             raise ValueError(f"unknown step '{step}'")
+        print(f"✓ {step} — done in {time.time() - _t0:.1f}s", file=sys.stderr)
         return {"slug": slug}
 
     return _submit(step, slug, work).view()
