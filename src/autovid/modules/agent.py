@@ -36,6 +36,9 @@ Rules you always follow:
 - Honor the CHANNEL PROFILE if one is given (voice, rules, visual style, the
   recurring intro/sign-off/CTA).
 - When splitting a script into scenes, keep the narration VERBATIM.
+- If the creator asks for a LENGTH (e.g. "9 minutes", "90 seconds", "a 5-min
+  video"), put it on generate_script/blueprint as "seconds" (minutes x 60: 9 min
+  = 540). The writer targets ~150 words per minute. Default ~60s if unspecified.
 - Always design with the FULL visual toolbox below and keep the mix VARIED — a
   video should never be all one look or one motion.
 
@@ -57,9 +60,9 @@ Output ONLY JSON: {"reply": "<short reply>", "actions": [ <action>, ... ]}.
 Emit actions ONLY for concrete changes the creator asked for; otherwise [].
 
 Actions:
-- {"tool":"generate_script","topic":"..."}   write the full narration from a topic/brief (clears scenes)
+- {"tool":"generate_script","topic":"...","seconds":<optional total length in seconds>}   write the full narration from a topic/brief (clears scenes)
 - {"tool":"rewrite","instruction":"..."}     rewrite the current script per the instruction
-- {"tool":"blueprint","topic":"..."}         run the FULL director at once (script+scenes+visuals+motion+voice+sound). Use when they want "make the whole thing".
+- {"tool":"blueprint","topic":"...","seconds":<optional total length in seconds>}   run the FULL director at once (script+scenes+visuals+motion+voice+sound). Use when they want "make the whole thing".
 - {"tool":"split_scenes"}                     split the current script into scenes + full visual treatment
 - {"tool":"edit_scene","id":N,"text":"...","visual_type":"search|photo_edit|chart|text_card|generate","animation":"<see toolbox>","transition":"<see toolbox>","voice":"...","delivery":"...","image_prompt":"..."}  (include only the fields to change)
 - {"tool":"set_project","title":"...","voice":"...","music":"...","aspect":"16:9|9:16"}
@@ -107,6 +110,19 @@ def _decide(project, messages, channel_profile, cfg, llm) -> dict:
 
 # --- action executors --------------------------------------------------------
 
+def _action_seconds(a: dict) -> float | None:
+    """Total target length in seconds from an action (accepts seconds or minutes)."""
+    for key, mult in (("seconds", 1), ("minutes", 60)):
+        v = a.get(key)
+        if v is not None:
+            try:
+                s = float(v) * mult
+                return s if s > 0 else None
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
 def _seed(topic, channel_profile, channel_signature):
     parts = [topic]
     if channel_profile:
@@ -132,12 +148,13 @@ def run_agent(project, messages, cfg, *, channel_profile="", channel_signature="
         try:
             if tool == "generate_script":
                 topic = (a.get("topic") or project.title or project.theme or "").strip()
+                secs = _action_seconds(a)
                 raw = write_script(_seed(topic, channel_profile, channel_signature), cfg,
-                                   llm=get_llm(cfg, "screenwriter"))
+                                   llm=get_llm(cfg, "screenwriter"), seconds=secs)
                 project.script_raw, project.script_human, project.scenes = raw, "", []
                 if topic and (not project.title or project.title == project.slug):
                     project.title = topic[:70]
-                r = f"wrote script ({len(raw.split())} words)"
+                r = f"wrote script ({len(raw.split())} words{', ~%ds' % secs if secs else ''})"
 
             elif tool == "rewrite":
                 cur = project.script_human or project.script_raw
@@ -156,7 +173,8 @@ def run_agent(project, messages, cfg, *, channel_profile="", channel_signature="
 
             elif tool == "blueprint":
                 topic = (a.get("topic") or project.title or project.theme or "").strip()
-                bp = build_blueprint(topic, acfg, log=log, channel_profile=channel_profile,
+                bp = build_blueprint(topic, acfg, seconds=_action_seconds(a), log=log,
+                                     channel_profile=channel_profile,
                                      channel_signature=channel_signature, channel_slug=channel_slug)
                 for f in ("title", "script_raw", "script_human", "scenes", "theme",
                           "voice", "music", "style", "blueprint_notes"):

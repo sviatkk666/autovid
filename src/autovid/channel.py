@@ -34,6 +34,10 @@ class Channel:
     visual_notes: str = ""        # look/feel guidance for the Art Director
     thumbnail_style: str = ""     # thumbnail vibe / clickbait level (e.g. "high-energy clickbait, big arrows" / "clean & minimal")
     aspect: str = "16:9"          # default format for new videos
+    # Max share of scenes that may be full AI-generated images, for THIS channel.
+    # -1 = inherit the global default (director.max_ai_fraction). 0 = none, 1 = no
+    # cap. Lets each channel pick its own creative latitude (stock-heavy ↔ AI-heavy).
+    max_ai_fraction: float = -1.0
     # --- recurring engagement "signature" (woven into every video's script) ---
     intro: str = ""               # recurring greeting / cold-open line
     outro: str = ""               # recurring sign-off

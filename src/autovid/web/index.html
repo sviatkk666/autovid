@@ -806,7 +806,11 @@ function renderChannel(){
   const handle=el('input',{value:ch.handle||'',placeholder:'@handle',onblur:()=>patchChannel({handle:handle.value})});
   const aspect=el('select',{onchange:()=>patchChannel({aspect:aspect.value})});
   ['16:9','9:16'].forEach(a=>aspect.append(el('option',{value:a,textContent:a,selected:a===ch.aspect})));
-  sb.append(el('div',{className:'grid2'},wrap('niche',niche),wrap('handle',handle)),wrap('default format',aspect));
+  const aifrac=el('select',{onchange:()=>patchChannel({max_ai_fraction:+aifrac.value})});
+  [['-1','Default (≤20%)'],['0','None — stock only'],['0.2','Up to 20%'],['0.4','Up to 40%'],['0.7','Up to 70%'],['1','No limit (any)']]
+    .forEach(([v,l])=>aifrac.append(el('option',{value:v,textContent:l,selected:Math.abs((ch.max_ai_fraction!=null?ch.max_ai_fraction:-1)-(+v))<1e-6})));
+  sb.append(el('div',{className:'grid2'},wrap('niche',niche),wrap('handle',handle)),
+    el('div',{className:'grid2'},wrap('default format',aspect),wrap('AI images allowed',aifrac)));
   const tf=(k,lbl,rows=2)=>{const t=el('textarea',{rows,value:ch[k]||'',onblur:()=>patchChannel({[k]:t.value})});return el('div',{},el('label',{textContent:lbl}),t);};
   sb.append(tf('description','Description'),tf('rules',"Content rules (do / don't)"),
     el('div',{className:'grid2'},tf('audience','Audience',1),tf('voice','Voice character',1)),

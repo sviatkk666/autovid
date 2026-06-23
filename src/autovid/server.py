@@ -456,6 +456,8 @@ def create_project(body: dict = Body(...)):
         if chan:
             dcfg.setdefault("scriptgen", {})["niche"] = chan.niche
             dcfg["_aspect"] = body.get("aspect") or chan.aspect
+            if chan.max_ai_fraction >= 0:   # per-channel AI-image latitude overrides the global cap
+                dcfg.setdefault("director", {})["max_ai_fraction"] = chan.max_ai_fraction
         else:
             dcfg["_aspect"] = aspect
         prof = chan.profile_text() if chan else ""
@@ -845,10 +847,13 @@ def project_agent(slug: str, body: dict = Body(...)):
     def work():
         p = Project.load(slug)
         prof = sig = ""
+        acfg = copy.deepcopy(CFG)
         if p.channel and Channel.exists(p.channel):
             ch = Channel.load(p.channel)
             prof, sig = ch.profile_text(), ch.signature_text()
-        return run_agent(p, messages, copy.deepcopy(CFG), channel_profile=prof,
+            if ch.max_ai_fraction >= 0:   # honor this channel's AI-image latitude
+                acfg.setdefault("director", {})["max_ai_fraction"] = ch.max_ai_fraction
+        return run_agent(p, messages, acfg, channel_profile=prof,
                          channel_signature=sig, channel_slug=p.channel,
                          log=lambda m: print(m, file=sys.stderr))
 
