@@ -536,6 +536,60 @@ def _step_cfg(step: str, provider: str | None) -> dict:
     return cfg
 
 
+def _apply_step(p: Project, step: str, cfg: dict, force: bool = False, only: set[int] | None = None) -> None:
+    """Run one pipeline step against an already-loaded project (no logging/banner)."""
+    if step == "humanize":
+        p.script_human = humanize_text(p.script_raw, cfg)
+        p.save()
+    elif step == "parse":
+        src = p.script_human or p.script_raw
+        if not (src or "").strip():
+            raise ValueError("write a script before splitting into scenes")
+        prof, max_ai = "", None
+        if p.channel and Channel.exists(p.channel):
+            ch = Channel.load(p.channel)
+            prof, max_ai = ch.profile_text(), ch.max_ai_fraction
+        try:   # the Art Director splits AND assigns visual_type + animation + transition
+            p.scenes = split_and_direct(src, cfg, channel_profile=prof, channel_max_ai=max_ai)
+        except Exception as e:  # noqa: BLE001 — degrade to a plain split if the LLM is unreachable
+            print(f"[parse] art director unavailable ({e}); plain split", file=sys.stderr)
+            p.scenes = parse_script(src, cfg)
+        p.save()
+    elif step == "tts":
+        synthesize_project(p, cfg, force=force, only=only)
+    elif step == "images":
+        fetch_project(p, cfg, force=force, only=only)
+    elif step == "imagegen":
+        generate_project(p, cfg, force=force, only=only)
+    elif step == "chart":
+        chart_project(p, cfg, force=force, only=only)
+    elif step == "text_card":
+        textcard_project(p, cfg, force=force, only=only)
+    elif step == "photo_edit":
+        photo_edit_project(p, cfg, force=force, only=only)
+    elif step == "visuals":
+        realize_visuals(p, cfg, force=force, only=only)
+    elif step == "montage":
+        build_video(p, cfg, force=force)
+    elif step == "audiomix":
+        mix_project(p, cfg, force=force)
+    elif step == "captions":
+        make_captions(p, cfg, force=force)
+    elif step == "thumbnail":
+        make_thumbnail(p, cfg, force=force)
+    elif step == "publish":
+        prof = Channel.load(p.channel).profile_text() if p.channel and Channel.exists(p.channel) else ""
+        make_publish_kit(p, cfg, channel_profile=prof, force=force)
+    else:
+        raise ValueError(f"unknown step '{step}'")
+
+
+# The full "Produce" chain, and which steps are non-fatal (a failure is logged but
+# the chain continues — you still get a video even if captions/thumb/publish hiccup).
+_PRODUCE_CHAIN = ["parse", "visuals", "tts", "montage", "audiomix", "captions", "thumbnail", "publish"]
+_PRODUCE_OPTIONAL = {"tts", "audiomix", "captions", "thumbnail", "publish"}
+
+
 @app.post("/api/projects/{slug}/steps/{step}")
 def run_step(slug: str, step: str, body: dict = Body(default={})):
     _load(slug)  # 404 if missing
@@ -550,54 +604,46 @@ def run_step(slug: str, step: str, body: dict = Body(default={})):
         scope = f" (scene{'s' if only and len(only) > 1 else ''} {', '.join(map(str, sorted(only)))})" if only else ""
         print(f"▶ {step} — {_STEP_DESC.get(step, step)}{scope}{' [force]' if force else ''}…", file=sys.stderr)
         _t0 = time.time()
-        if step == "humanize":
-            p.script_human = humanize_text(p.script_raw, cfg)
-            p.save()
-        elif step == "parse":
-            src = p.script_human or p.script_raw
-            if not (src or "").strip():
-                raise ValueError("write a script before splitting into scenes")
-            prof, max_ai = "", None
-            if p.channel and Channel.exists(p.channel):
-                ch = Channel.load(p.channel)
-                prof, max_ai = ch.profile_text(), ch.max_ai_fraction
-            try:   # the Art Director splits AND assigns visual_type + animation + transition
-                p.scenes = split_and_direct(src, cfg, channel_profile=prof, channel_max_ai=max_ai)
-            except Exception as e:  # noqa: BLE001 — degrade to a plain split if the LLM is unreachable
-                print(f"[parse] art director unavailable ({e}); plain split", file=sys.stderr)
-                p.scenes = parse_script(src, cfg)
-            p.save()
-        elif step == "tts":
-            synthesize_project(p, cfg, force=force, only=only)
-        elif step == "images":
-            fetch_project(p, cfg, force=force, only=only)
-        elif step == "imagegen":
-            generate_project(p, cfg, force=force, only=only)
-        elif step == "chart":
-            chart_project(p, cfg, force=force, only=only)
-        elif step == "text_card":
-            textcard_project(p, cfg, force=force, only=only)
-        elif step == "photo_edit":
-            photo_edit_project(p, cfg, force=force, only=only)
-        elif step == "visuals":
-            realize_visuals(p, cfg, force=force, only=only)
-        elif step == "montage":
-            build_video(p, cfg, force=force)
-        elif step == "audiomix":
-            mix_project(p, cfg, force=force)
-        elif step == "captions":
-            make_captions(p, cfg, force=force)
-        elif step == "thumbnail":
-            make_thumbnail(p, cfg, force=force)
-        elif step == "publish":
-            prof = Channel.load(p.channel).profile_text() if p.channel and Channel.exists(p.channel) else ""
-            make_publish_kit(p, cfg, channel_profile=prof, force=force)
-        else:
-            raise ValueError(f"unknown step '{step}'")
+        _apply_step(p, step, cfg, force=force, only=only)
         print(f"✓ {step} — done in {time.time() - _t0:.1f}s", file=sys.stderr)
         return {"slug": slug}
 
     return _submit(step, slug, work).view()
+
+
+@app.post("/api/projects/{slug}/produce")
+def produce(slug: str, body: dict = Body(default={})):
+    """Run the whole production chain as ONE background job, so it finishes even if
+    the page reloads or closes. `from` picks the starting stage; the page reconnects
+    to this job's live log on (re)open."""
+    _load(slug)
+    force = bool(body.get("force"))
+    start = (body.get("from") or "visuals").strip()
+
+    def work():
+        p0 = Project.load(slug)
+        order = _PRODUCE_CHAIN[_PRODUCE_CHAIN.index(start):] if start in _PRODUCE_CHAIN else _PRODUCE_CHAIN[1:]
+        if not p0.scenes:
+            if (p0.script_human or p0.script_raw) and "parse" not in order:
+                order = ["parse"] + order          # need scenes first
+        elif start != "parse":
+            order = [s for s in order if s != "parse"]   # don't re-split existing scenes
+        print(f"▶ Producing: {' → '.join(order)}", file=sys.stderr)
+        for i, step in enumerate(order):
+            p = Project.load(slug)   # fresh each step (the previous one saved)
+            print(f"▶ {step} — {_STEP_DESC.get(step, step)}…", file=sys.stderr)
+            t0 = time.time()
+            try:
+                _apply_step(p, step, copy.deepcopy(CFG), force=(force and i == 0))
+                print(f"✓ {step} — done in {time.time() - t0:.1f}s", file=sys.stderr)
+            except Exception as e:  # noqa: BLE001
+                print(f"✗ {step} — failed: {type(e).__name__}: {e}", file=sys.stderr)
+                if step not in _PRODUCE_OPTIONAL:
+                    raise
+        print("✓ produce — all stages complete", file=sys.stderr)
+        return {"slug": slug}
+
+    return _submit("produce", slug, work).view()
 
 
 # --- intermediate editing (synchronous) --------------------------------------

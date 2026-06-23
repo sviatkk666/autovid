@@ -55,10 +55,11 @@ VISUAL TOOLBOX (you can set these per scene via edit_scene):
   photo + light HTML polish) · "chart" (data/steps/comparison/timeline drawn) ·
   "text_card" (words as hero: quote, big stat, definition, list, title card) ·
   "generate" (AI image — SPARINGLY, at most ~20% of scenes; never the default).
-- animation — the camera MOVE: "auto" (gentle alternating Ken Burns) ·
-  "kenburns-in"/"kenburns-out" · "zoom-in"/"zoom-out" ·
-  "pan-left"/"pan-right"/"pan-up"/"pan-down" · "static" (no move; best for
-  text_card / chart).
+- animation — the camera MOVE, for PHOTOS only: "auto" (gentle alternating Ken
+  Burns) · "kenburns-in"/"kenburns-out" · "zoom-in"/"zoom-out" ·
+  "pan-left"/"pan-right"/"pan-up"/"pan-down" · "static". Charts and text_cards must
+  ALWAYS be "static" — motion on a graph or poster looks terrible. Be deliberate;
+  not every photo needs a big move.
 - transition — how a scene ENTERS: "cut" · "fade"/"dissolve" ·
   "fadeblack"/"fadewhite" · "slide-left/right/up/down" · "wipe-left/right/up/down"
   · "zoom" · "circle". Match it to the pacing.

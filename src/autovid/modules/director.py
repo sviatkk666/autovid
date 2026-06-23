@@ -103,11 +103,12 @@ mantras, key takeaways and chapter beats.
 or set as type (impossible/surreal/specific composite). Use SPARINGLY: at most one \
 in five scenes. Never default to it.
 
-CAMERA MOTION (animation): give each scene deliberate movement — "auto" (a gentle \
-Ken Burns that alternates per scene), "kenburns-in"/"kenburns-out", \
-"zoom-in"/"zoom-out", "pan-left"/"pan-right"/"pan-up"/"pan-down" (good for wide \
-scenery / reveals), or "static" (no move — best for a clean text_card or chart). \
-Vary the motion across neighbouring scenes.
+CAMERA MOTION (animation) — be DELIBERATE, don't move everything:
+- PHOTOS (search / photo_edit / generate): add a gentle move — "auto" (alternating \
+Ken Burns), "kenburns-in"/"out", "zoom-in"/"out", or "pan-left/right/up/down" for \
+wide scenery / reveals. Vary it across neighbours; a calm beat can stay "static".
+- CHARTS and TEXT_CARDS: ALWAYS "static". Camera motion on a graph, diagram or \
+typographic poster looks terrible and makes text unreadable — never animate them.
 
 TRANSITIONS (into the scene): "cut" (energetic, punchy), "fade"/"dissolve" \
 (smooth, reflective), "fadeblack"/"fadewhite" (a beat / chapter break), \
@@ -116,12 +117,12 @@ transition to the pacing of the beat; the first scene is always a "cut".
 
 COHESION (critical — the video must NOT look like a slideshow of disconnected \
 stills): make it feel like ONE continuous piece. Keep ONE consistent look across \
-scenes (palette, mood, framing per the channel's visual style); give EVERY scene \
-deliberate motion (almost never "static" on a photo); choose transitions that \
+scenes (palette, mood, framing per the channel's visual style); give PHOTO scenes \
+deliberate motion while keeping charts/text_cards static; choose transitions that \
 CONNECT consecutive beats (a fade/dissolve for a soft shift, a slide/wipe to push \
-forward, a hard cut only for a deliberate jolt) rather than random ones; and \
-sequence shots so they flow (establishing -> detail -> reaction). Vary treatments \
-for rhythm, but never at the cost of the through-line.
+forward, a hard cut for a deliberate jolt) — lean subtle, don't reach for a flashy \
+wipe/zoom on every cut; and sequence shots so they flow (establishing -> detail -> \
+reaction). Vary treatments for rhythm, but never at the cost of the through-line.
 
 Keep image_prompt free of on-screen text and narration restatement (text_card and \
 chart handle their own words)."""
@@ -165,6 +166,8 @@ def _art_director(script: str, cfg: dict, llm: LLM, channel_profile: str = "") -
         anim = (item.get("animation") or "auto").strip().lower().replace("_", "-")
         if anim not in ANIMATIONS:
             anim = "auto"
+        if vtype in ("chart", "text_card"):
+            anim = "static"   # charts / typographic posters must not have camera motion
         trans = (item.get("transition") or "").strip().lower().replace("_", "-")
         if trans not in TRANSITIONS:
             trans = ""

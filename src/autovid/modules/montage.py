@@ -289,6 +289,10 @@ def build_video(
         clip = clips_dir / f"scene_{scene.id:02d}.mp4"
 
         anim = (scene.animation or "auto") if ken_burns else "static"
+        # Camera motion on a chart / typographic poster looks awful and makes text
+        # unreadable — data-viz and text cards are ALWAYS rendered static.
+        if scene.visual_type in ("chart", "text_card"):
+            anim = "static"
         trans = (scene.transition or "").strip()
         print(f"[montage] scene {scene.id}: {scene.image_path} "
               f"+ {'audio' if audio else 'silence'} ({duration:.1f}s, motion={anim}"

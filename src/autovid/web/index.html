@@ -387,17 +387,18 @@ async function reattachJob(slug){
   if(RUNNING) return;
   let jobs; try{ jobs=(await api.get('/api/jobs')).jobs||[]; }catch(e){ return; }
   if(RUNNING||!(CUR&&CUR.slug===slug)) return;
-  const active=jobs.find(j=>j.slug===slug && (j.status==='running'||j.status==='queued') && PIPELINE.some(s=>s.key===j.kind));
+  const active=jobs.find(j=>j.slug===slug && (j.status==='running'||j.status==='queued')
+    && (j.kind==='produce'||PIPELINE.some(s=>s.key===j.kind)));
   if(!active) return;
-  const key=active.kind;
-  RUNNING=true; LOGOPEN=true; setNode(key,'running');
+  const isProduce=active.kind==='produce', key=isProduce?null:active.kind;
+  RUNNING=true; LOGOPEN=true; if(key) setNode(key,'running');
   const con=$('.console'); if(con) con.classList.add('busy');
   const lg=$('#pipelog'); if(lg){ lg.classList.add('show','open'); syncLogToggle(); }
   try{
     const full=await api.get('/api/jobs/'+active.id);
-    await pollJob(full, j=>{ if(CUR&&CUR.slug===slug) pipeLog(key,j); });
-    if(CUR&&CUR.slug===slug) setNode(key,'done');
-  }catch(e){ if(CUR&&CUR.slug===slug) setNode(key,'error'); }
+    await pollJob(full, j=>{ if(!(CUR&&CUR.slug===slug))return; isProduce?drawProduce(j):pipeLog(key,j); });
+    if(CUR&&CUR.slug===slug && key) setNode(key,'done');
+  }catch(e){ if(CUR&&CUR.slug===slug && key) setNode(key,'error'); }
   RUNNING=false;
   await refreshProjects();
   if(CUR&&CUR.slug===slug) await openProject(slug);
@@ -511,36 +512,38 @@ async function runStage(key,opts={}){
   return ok;
 }
 // run a chain of stages from `fromKey` to the end (skips humanize/parse unless intended).
+// Produce runs as ONE server-side job (POST /produce) so the whole chain finishes
+// even if the page reloads/closes; the node states are driven from its streaming log.
 async function produce(fromKey,{force=false}={}){
   if(RUNNING){ toastMsg('A stage is already running…'); return; }
   if(!CUR) return; const slug=CUR.slug;
-  let keys=PIPELINE.map(s=>s.key); keys=keys.slice(keys.indexOf(fromKey));
-  const hasScenes=(CUR.scenes||[]).length>0;
-  keys=keys.filter(k=>{
-    if(k==='humanize'&&fromKey!=='humanize') return false;
-    if(k==='parse'&&fromKey!=='parse'&&hasScenes) return false;   // never silently re-parse over edited scenes
-    return true;
-  });
   RUNNING=true; LOGOPEN=true;
   const con=$('.console'); if(con) con.classList.add('busy');
   const lg=$('#pipelog'); if(lg){ lg.classList.add('show','open'); syncLogToggle(); lg.scrollIntoView({behavior:'smooth',block:'nearest'}); }
-  for(let i=0;i<keys.length;i++){
-    const k=keys[i], opts=(force&&i===0)?{force:true}:{};
-    if(!(CUR&&CUR.slug===slug)) break;   // user navigated away — stop touching this view
-    setNode(k,'running');
-    try{
-      const job=await api.post(`/api/projects/${slug}/steps/${k}`,opts);
-      await pollJob(job,j=>{ if(CUR&&CUR.slug===slug) pipeLog(k,j); });
-      if(!(CUR&&CUR.slug===slug)) return;          // navigated away mid-stage — don't stomp the new view
-      setNode(k,'done');
-    }catch(e){
-      if(CUR&&CUR.slug===slug){ setNode(k,'error'); pipeLog(k,{status:'error',error:e.message,log:e.message}); }
-      if(k!=='thumbnail'){ RUNNING=false; await refreshProjects(); if(CUR&&CUR.slug===slug) await openProject(slug); return; }
-    }
+  try{
+    const job=await api.post(`/api/projects/${slug}/produce`,{from:fromKey,force});
+    await pollJob(job, j=>{ if(CUR&&CUR.slug===slug) drawProduce(j); });
+  }catch(e){
+    const l=$('#pipelog'); if(l) l.classList.add('show','open');
+    pipeLog(fromKey,{status:'error',error:e.message,log:(e.message||'')});
   }
   RUNNING=false;
   await refreshProjects();
   if(CUR&&CUR.slug===slug) await openProject(slug);
+}
+// Animate the pipeline from a single produce job's streaming log (parses ▶ / ✓ / ✗ lines).
+function drawProduce(job){
+  const log=job.log||'', known=new Set(PIPELINE.map(s=>s.key));
+  const started=[...log.matchAll(/▶ (\w+) —/g)].map(m=>m[1]).filter(k=>known.has(k));
+  const done=new Set([...log.matchAll(/✓ (\w+) — done/g)].map(m=>m[1]));
+  const failed=new Set([...log.matchAll(/✗ (\w+) — failed/g)].map(m=>m[1]));
+  let cur=null;
+  started.forEach(k=>{
+    if(failed.has(k)) setNode(k,'error');
+    else if(done.has(k)||job.status==='done') setNode(k,'done');
+    else { setNode(k,'running'); cur=k; }
+  });
+  pipeLog(cur||started[started.length-1]||'visuals', job);
 }
 function toastMsg(text){ const t=$('#toast'); t.className='toast show'; t.innerHTML=''; t.append(el('div',{textContent:text}));
   setTimeout(()=>{t.className='toast';},4000); }
