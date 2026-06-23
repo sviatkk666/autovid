@@ -16,6 +16,7 @@ from __future__ import annotations
 from ..providers.llm import get_llm
 from ..util import extract_json
 from .chartgen import chart_project  # noqa: F401  (kept for parity / future tools)
+from . import memory_store
 from .director import _art_director, build_blueprint, enforce_ai_cap, normalize_visual_type
 from .montage import normalize_animation, normalize_transition
 from .humanizer import humanize_text  # noqa: F401
@@ -187,6 +188,10 @@ def run_agent(project, messages, cfg, *, channel_profile="", channel_signature="
                     setattr(project, f, getattr(bp, f) or getattr(project, f))
                 if bp.source_idea:
                     project.source_idea = bp.source_idea
+                try:   # remember it so the channel's content memory learns from chat-built videos too
+                    memory_store.remember(project)
+                except Exception as e:  # noqa: BLE001 — best-effort
+                    log(f"[agent] memory skipped ({e})")
                 r = f"built the full blueprint ({len(project.scenes)} scenes)"
 
             elif tool == "split_scenes":
@@ -197,6 +202,10 @@ def run_agent(project, messages, cfg, *, channel_profile="", channel_signature="
                     scenes = _art_director(script, cfg, get_llm(cfg, "art_director"), channel_profile=channel_profile)
                     demoted = enforce_ai_cap(scenes, float(cfg.get("director", {}).get("max_ai_fraction", 0.2)))
                     project.scenes = scenes
+                    try:   # this storyline now feeds the channel's content memory
+                        memory_store.remember(project)
+                    except Exception as e:  # noqa: BLE001
+                        log(f"[agent] memory skipped ({e})")
                     r = f"split into {len(scenes)} scenes ({demoted} AI demoted to honor the cap)"
 
             elif tool == "edit_scene":
