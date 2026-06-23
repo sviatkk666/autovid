@@ -109,3 +109,30 @@ class Project:
 
     def next_scene_id(self) -> int:
         return (max((s.id for s in self.scenes), default=0)) + 1
+
+
+def invalidate_stale_assets(project: "Project", scene: "Scene", changed: set) -> list[str]:
+    """When a scene's SOURCE fields change, drop only that scene's now-stale rendered
+    assets so the next (idempotent) run regenerates just this scene and leaves the rest
+    untouched. text -> voice is stale; image_prompt / visual_type -> image is stale.
+    Returns a list of what was cleared (for logging)."""
+    cleared: list[str] = []
+    if (changed & {"text", "voice"}) and scene.audio_path:   # narration or cast voice changed
+        f = project.dir / scene.audio_path
+        if f.exists():
+            try:
+                f.unlink()
+            except OSError:
+                pass
+        scene.audio_path = ""
+        cleared.append("voice")
+    if (changed & {"image_prompt", "visual_type"}) and scene.image_path:
+        f = project.dir / scene.image_path
+        if f.exists():
+            try:
+                f.unlink()
+            except OSError:
+                pass
+        scene.image_path = ""
+        cleared.append("visual")
+    return cleared

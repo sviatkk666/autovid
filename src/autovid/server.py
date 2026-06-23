@@ -60,7 +60,7 @@ from .modules.textcard import textcard_project
 from .modules.tts import synthesize_project
 from .modules.visuals import realize_visuals
 from .providers.voices import list_voices
-from .project import PROJECTS_DIR, Project, Scene
+from .project import PROJECTS_DIR, Project, Scene, invalidate_stale_assets
 
 WEB_DIR = Path(__file__).parent / "web"
 CFG = load_config()
@@ -675,9 +675,17 @@ def patch_scene(slug: str, sid: int, body: dict = Body(...)):
         scene = p.scene_by_id(sid)
         if scene is None:
             raise HTTPException(404, f"no scene {sid}")
+        changed = set()
         for key in _SCENE_FIELDS:
-            if key in body and body[key] is not None:
+            if key in body and body[key] is not None and getattr(scene, key, None) != body[key]:
                 setattr(scene, key, body[key])
+                changed.add(key)
+        if scene.visual_type in ("chart", "text_card") and "visual_type" in changed:
+            scene.animation = "static"
+        cleared = invalidate_stale_assets(p, scene, changed)
+        if cleared:
+            print(f"[edit] scene {sid}: changed {', '.join(sorted(changed))} → will regenerate "
+                  f"{', '.join(cleared)} (other scenes untouched)", file=sys.stderr)
         if "est_duration_sec" in body and body["est_duration_sec"] is not None:
             scene.est_duration_sec = float(body["est_duration_sec"])
         if isinstance(body.get("sfx"), list):

@@ -269,8 +269,20 @@ def build_video(
     final = out_dir / f"{project.slug}.mp4"
 
     if final.exists() and not force and not dry_run:
-        print(f"[montage] {final} exists (use --force to rebuild)", file=sys.stderr)
-        return final
+        # Incremental: only rebuild if a scene's image/audio changed since the last
+        # render (e.g. you edited one scene). Otherwise keep the existing video.
+        vmtime = final.stat().st_mtime
+
+        def _newer(rel: str) -> bool:
+            if not rel:
+                return False
+            f = project.dir / rel
+            return f.exists() and f.stat().st_mtime > vmtime
+
+        if not any(_newer(s.image_path) or _newer(s.audio_path) for s in project.scenes):
+            print("[montage] up to date — no scene changed since the last render", file=sys.stderr)
+            return final
+        print("[montage] inputs changed — re-assembling", file=sys.stderr)
 
     if not dry_run:
         clips_dir.mkdir(parents=True, exist_ok=True)
