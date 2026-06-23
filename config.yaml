@@ -80,8 +80,11 @@ parser:
   # mode: auto | llm | deterministic
   # auto = use the LLM if available, else fall back to deterministic splitting.
   mode: auto
-  target_scene_seconds: 12       # aim for scenes ~this many seconds of narration
-                                 # (longer = fewer scenes; keeps long videos manageable)
+  target_scene_seconds: 12       # the Art Director aims for scenes ~this long (fewer,
+                                 # bigger scenes keep its single call manageable)…
+  max_scene_seconds: 8           # …then any scene longer than this is SPLIT into shorter
+                                 # sub-scenes, each with its own image, so no single shot
+                                 # is held long enough to get boring. 0 = no cap.
   words_per_second: 2.5          # ~150 wpm narration, for duration estimates
   # Appended to every image prompt to keep a consistent visual look.
   image_style: "cinematic, photorealistic, high detail, dramatic lighting"

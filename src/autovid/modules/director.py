@@ -138,6 +138,46 @@ def _art_user(script: str, target_seconds: float, style: str, channel_profile: s
     )
 
 
+def _cap_long_scenes(scenes: list[Scene], cfg: dict) -> list[Scene]:
+    """Split any scene longer than parser.max_scene_seconds into shorter sub-scenes —
+    each with its OWN image (image_prompt cleared so the search picks a distinct photo
+    per chunk) — so no single shot is held long enough to get boring. Narration stays
+    verbatim (split on sentence boundaries). Charts/text_cards are one visual for one
+    idea, so they're left whole."""
+    pcfg = cfg.get("parser", {})
+    max_s = float(pcfg.get("max_scene_seconds", 0) or 0)
+    if max_s <= 0:
+        return scenes
+    wps = float(pcfg.get("words_per_second", 2.5)) or 2.5
+    chunk_words = max(4, round(max_s * wps))
+    out: list[Scene] = []
+    for s in scenes:
+        dur = s.est_duration_sec or len(s.text.split()) / wps
+        if dur <= max_s + 2 or s.visual_type in ("chart", "text_card"):
+            out.append(s)
+            continue
+        sents = re.split(r"(?<=[.!?])\s+", s.text.strip()) or [s.text]
+        chunks, cur = [], ""
+        for sent in sents:
+            cand = (cur + " " + sent).strip()
+            if cur and len(cand.split()) > chunk_words:
+                chunks.append(cur)
+                cur = sent
+            else:
+                cur = cand
+        if cur:
+            chunks.append(cur)
+        for j, ch in enumerate(chunks):
+            out.append(Scene(
+                id=0, text=ch, image_prompt="",   # distinct photo per chunk via the search query
+                visual_type=s.visual_type, voice=s.voice, delivery=s.delivery,
+                animation="auto", transition=(s.transition if j == 0 else "fade"),
+                est_duration_sec=round(len(ch.split()) / wps, 1), notes=s.notes))
+    for i, s in enumerate(out, 1):
+        s.id = i
+    return out
+
+
 def _scene_array(data) -> list | None:
     """Pull the scene list out of whatever the LLM returned — a bare list, or an
     object that wraps it like {"scenes":[...]} / {"storyboard":[...]}."""
@@ -208,7 +248,7 @@ def _art_director(script: str, cfg: dict, llm: LLM, channel_profile: str = "") -
         ))
     if not scenes:
         raise ValueError("art director produced zero usable scenes")
-    return scenes
+    return _cap_long_scenes(scenes, cfg)   # split over-long scenes so no shot drags
 
 
 def clean_title(brief: str, script: str, cfg: dict, llm: LLM | None = None) -> str:
