@@ -43,6 +43,18 @@ class Channel:
     outro: str = ""               # recurring sign-off
     cta: str = ""                 # like / subscribe call to action
     catchphrase: str = ""         # signature phrase the channel is known for
+    # --- YouTube account-creation brand kit (filled by modules/brandkit.py) ----
+    # Everything the CRM needs to stand up the channel/account. Identity/creds
+    # (password, recovery, the real Google signup) stay in the CRM vault — autovid
+    # only prepares the brand + a suggested persona.
+    language: str = "English"     # primary spoken/UI language
+    region: str = ""              # target region, ISO-ish (e.g. "US", "UA")
+    keywords: list[str] = field(default_factory=list)  # channel SEO keywords
+    persona_name: str = ""        # the persona/creator name behind the account
+    suggested_email: str = ""     # suggested gmail handle (CRM finalizes the real one)
+    default_category: str = ""    # default YouTube category for uploads
+    avatar_path: str = ""         # generated profile picture (relative to channel dir)
+    banner_path: str = ""         # generated channel art / banner (relative to dir)
 
     @property
     def dir(self) -> Path:

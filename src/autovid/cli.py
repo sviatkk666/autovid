@@ -23,8 +23,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+from .channel import Channel
 from .config import load_config
 from .modules.audiomix import mix_project
+from .modules.brandkit import make_brand_kit
 from .modules.chartgen import chart_project
 from .modules.director import build_blueprint
 from .modules.humanizer import deterministic_cleanup, humanize_text
@@ -259,6 +261,25 @@ def cmd_thumbnail(args: argparse.Namespace) -> int:
         return 1
 
     print(f"[thumbnail] saved {project.json_path}", file=sys.stderr)
+    return 0
+
+
+def cmd_brandkit(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+
+    try:
+        channel = Channel.load(args.slug)
+    except FileNotFoundError:
+        print(f"error: no channel '{args.slug}' (create it in the dashboard first).", file=sys.stderr)
+        return 1
+
+    try:
+        make_brand_kit(channel, cfg, force=args.force)
+    except (RuntimeError, ValueError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+    print(f"[brandkit] saved {channel.json_path}", file=sys.stderr)
     return 0
 
 
@@ -633,6 +654,11 @@ def main(argv: list[str] | None = None) -> int:
     tb.add_argument("slug", help="project slug (folder under projects/)")
     tb.add_argument("--force", action="store_true", help="regenerate even if one exists")
     tb.set_defaults(func=cmd_thumbnail)
+
+    bk = sub.add_parser("brandkit", help="generate the channel's account-creation brand kit (fields + avatar + banner)")
+    bk.add_argument("slug", help="channel slug (folder under channels/)")
+    bk.add_argument("--force", action="store_true", help="regenerate even if a kit exists")
+    bk.set_defaults(func=cmd_brandkit)
 
     r = sub.add_parser("run", help="all-in-one: [generate ->] humanize -> parse -> tts -> images -> montage")
     r.add_argument("input", nargs="?", default=None, help="input script (.txt/.md); omit if using --topic")
