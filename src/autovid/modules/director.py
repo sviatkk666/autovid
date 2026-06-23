@@ -138,6 +138,21 @@ def _art_user(script: str, target_seconds: float, style: str, channel_profile: s
     )
 
 
+def _scene_array(data) -> list | None:
+    """Pull the scene list out of whatever the LLM returned — a bare list, or an
+    object that wraps it like {"scenes":[...]} / {"storyboard":[...]}."""
+    if isinstance(data, list):
+        return data or None
+    if isinstance(data, dict):
+        for k in ("scenes", "scene_list", "shots", "storyboard", "shotlist", "items", "result"):
+            if isinstance(data.get(k), list) and data[k]:
+                return data[k]
+        lists = [v for v in data.values() if isinstance(v, list) and v and isinstance(v[0], dict)]
+        if lists:
+            return max(lists, key=len)   # the longest list of objects is most likely the scenes
+    return None
+
+
 def _art_director(script: str, cfg: dict, llm: LLM, channel_profile: str = "") -> list[Scene]:
     pcfg = cfg.get("parser", {})
     wps = float(pcfg.get("words_per_second", 2.5))
@@ -146,11 +161,22 @@ def _art_director(script: str, cfg: dict, llm: LLM, channel_profile: str = "") -
     sys_prompt = _ART_SYSTEM.format(
         animations=" | ".join(f'"{a}"' for a in ANIMATIONS),
         transitions=" | ".join(f'"{t}"' for t in TRANSITIONS))
-    raw = _agent_llm(cfg, "art_director", llm).complete(
-        sys_prompt, _art_user(script, target_seconds, style, channel_profile),
-        temperature=_agent_temp(cfg, "art_director", 0.6))
-    data = extract_json(raw)
-    if not isinstance(data, list) or not data:
+    user = _art_user(script, target_seconds, style, channel_profile)
+    agent = _agent_llm(cfg, "art_director", llm)
+    temp = _agent_temp(cfg, "art_director", 0.6)
+
+    data = None
+    for attempt in range(2):
+        u = user if attempt == 0 else (
+            user + "\n\nIMPORTANT: return ONLY a bare JSON array that starts with '[' "
+            "and ends with ']' — not an object, not prose, no markdown fences.")
+        try:
+            data = _scene_array(extract_json(agent.complete(sys_prompt, u, temperature=temp)))
+        except (ValueError, Exception):  # noqa: BLE001 — bad JSON / provider blip: retry once
+            data = None
+        if data:
+            break
+    if not data:
         raise ValueError("art director did not return a scene array")
 
     scenes: list[Scene] = []
