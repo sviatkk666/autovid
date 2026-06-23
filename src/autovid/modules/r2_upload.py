@@ -58,8 +58,10 @@ def upload_file(local: Path, key: str, content_type: str | None = None) -> str:
         raise RuntimeError("R2_BUCKET / R2_PUBLIC_URL not set — configure R2 in autovid .env")
     ctype = content_type or _CONTENT_TYPE.get(local.suffix.lower(), "application/octet-stream")
     client = _client()
-    with open(local, "rb") as f:
-        client.put_object(Bucket=bucket, Key=key, Body=f, ContentType=ctype)
+    # upload_file does automatic multipart + per-part retries (robust for the
+    # multi-hundred-MB mp4s; single-PUT put_object caps at 5 GiB and restarts on
+    # any mid-transfer error).
+    client.upload_file(str(local), bucket, key, ExtraArgs={"ContentType": ctype})
     url = f"{public}/{key}"
     print(f"[r2] {local.name} -> {url}", file=sys.stderr)
     return url
