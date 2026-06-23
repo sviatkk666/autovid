@@ -41,7 +41,7 @@ from .modules import memory_store
 from .providers.ai33 import ai33_credits
 from .providers.llm import available_models
 from .modules.agent import run_agent
-from .modules.audiomix import mix_project
+from .modules.audiomix import audiomix_done, mix_project
 from .modules.chartgen import chart_project
 from .modules.director import build_blueprint
 from .modules.strategist import (channel_edit_turn, channel_setup_turn, chat_reply,
@@ -241,6 +241,7 @@ def _step_status(p: Project) -> dict:
         "tts": {"done": n > 0 and voiced == n, "have": voiced, "total": n},
         "images": {"done": n > 0 and imaged == n, "have": imaged, "total": n},
         "montage": bool(p.video_path) and (p.dir / p.video_path).exists(),
+        "audiomix": audiomix_done(p),
         "thumbnail": bool(p.thumbnail_path) and (p.dir / p.thumbnail_path).exists(),
     }
 
@@ -251,6 +252,12 @@ def _project_view(p: Project, *, full: bool = True) -> dict:
     data["video_url"] = _asset_url(p.slug, p.video_path)
     data["thumbnail_url"] = _asset_url(p.slug, p.thumbnail_path)
     data["duration_sec"] = round(sum(s.est_duration_sec for s in p.scenes), 1)
+    # All generated thumbnail variants, with which one is currently selected, so
+    # the dashboard can show a picker (POST .../select-thumbnail to choose one).
+    data["thumbnail_variants"] = [
+        {"path": rel, "url": _asset_url(p.slug, rel), "selected": rel == p.thumbnail_path}
+        for rel in (p.thumbnails or []) if _asset_url(p.slug, rel)
+    ]
     if full:
         for s, sv in zip(p.scenes, data["scenes"]):
             sv["audio_url"] = _asset_url(p.slug, s.audio_path)
@@ -617,6 +624,21 @@ def delete_scene(slug: str, sid: int):
                 if f.exists():
                     f.unlink()
         p.scenes = [s for s in p.scenes if s.id != sid]
+        p.save()
+        return _project_view(p)
+
+
+@app.post("/api/projects/{slug}/select-thumbnail")
+def select_thumbnail(slug: str, body: dict = Body(...)):
+    """Pick one of the generated thumbnail variants as the project's thumbnail."""
+    path = (body.get("path") or "").strip()
+    with _slug_lock(slug):
+        p = _load(slug)
+        if path not in (p.thumbnails or []):
+            raise HTTPException(400, f"'{path}' is not one of this project's thumbnails")
+        if not (p.dir / path).exists():
+            raise HTTPException(404, f"thumbnail file '{path}' is missing")
+        p.thumbnail_path = path
         p.save()
         return _project_view(p)
 

@@ -6,193 +6,276 @@
 <title>autovid — studio</title>
 <style>
   :root{
-    --bg:#0a0c10; --bg2:#0d1015;
-    --panel:#13161c; --panel2:#191d25; --panel3:#1f242d;
-    --line:#262c36; --line2:#333b48;
-    --text:#eef1f6; --dim:#98a2b3; --faint:#6b7585;
-    --accent:#5b9dff; --accent2:#46cd84; --warn:#e3b341; --bad:#f4685c; --violet:#b48cff;
-    --chip:#1b2028;
-    --r:12px; --r2:9px; --r3:7px;
-    --sh:0 1px 2px rgba(0,0,0,.4); --sh2:0 12px 38px rgba(0,0,0,.55);
+    --bg:#08090d; --bg2:#0c0e14;
+    --surface:#111319; --surface2:#161922; --surface3:#1d212c;
+    --line:#242936; --line2:#333a4a;
+    --text:#eceff5; --muted:#969eb1; --faint:#646b7c;
+    --primary:#8b7bff; --primary2:#c87dff;        /* violet → fuchsia */
+    --teal:#34d399; --amber:#fbbf24; --rose:#fb6f84; --cyan:#46c8f5;
+    --chip:#171b24;
+    --r:16px; --r2:11px; --r3:8px;
+    --grad:linear-gradient(135deg,var(--primary),var(--primary2));
+    --sh:0 1px 2px rgba(0,0,0,.45); --sh2:0 18px 50px rgba(0,0,0,.6);
+    --glow:0 0 0 3px rgba(139,123,255,.18);
   }
   *{box-sizing:border-box}
-  ::selection{background:rgba(91,157,255,.3)}
+  ::selection{background:rgba(139,123,255,.32)}
   html,body{height:100%}
-  body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-serif;
-    background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
-  a{color:var(--accent);text-decoration:none}
-  a:hover{text-decoration:underline}
+  body{margin:0;font:14px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,system-ui,sans-serif;
+    color:var(--text);-webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(900px 500px at 78% -8%,rgba(139,123,255,.13),transparent 60%),
+      radial-gradient(800px 460px at 6% 4%,rgba(70,200,245,.08),transparent 55%),
+      var(--bg);}
+  a{color:var(--primary);text-decoration:none} a:hover{text-decoration:underline}
   *::-webkit-scrollbar{width:10px;height:10px}
-  *::-webkit-scrollbar-thumb{background:#2a313c;border-radius:6px;border:2px solid transparent;background-clip:padding-box}
-  *::-webkit-scrollbar-thumb:hover{background:#3a4452;background-clip:padding-box}
+  *::-webkit-scrollbar-thumb{background:#2b3340;border-radius:7px;border:2px solid transparent;background-clip:padding-box}
+  *::-webkit-scrollbar-thumb:hover{background:#3b4453;background-clip:padding-box}
   *::-webkit-scrollbar-track{background:transparent}
 
-  button{font:inherit;font-weight:500;cursor:pointer;border:1px solid var(--line2);background:var(--panel3);
-    color:var(--text);border-radius:var(--r3);padding:7px 13px;transition:.14s ease;line-height:1.2;white-space:nowrap}
-  button:hover{border-color:#42505f;background:#232a34;transform:translateY(-1px)}
+  button{font:inherit;font-weight:550;cursor:pointer;border:1px solid var(--line2);background:var(--surface3);
+    color:var(--text);border-radius:var(--r3);padding:8px 14px;transition:.15s ease;line-height:1.2;white-space:nowrap}
+  button:hover{border-color:#444d5e;background:#262c38;transform:translateY(-1px)}
   button:active{transform:translateY(0)}
   button:disabled{opacity:.4;cursor:default;transform:none}
-  button.primary{background:linear-gradient(180deg,#69a6ff,#4d8bf0);border-color:#5b9dff;color:#06182f;font-weight:650;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 2px 9px rgba(59,125,224,.35)}
-  button.primary:hover{background:linear-gradient(180deg,#7bb1ff,#5a96f5);border-color:#7bb1ff}
-  button.go{background:linear-gradient(180deg,#56d992,#3cbd77);border-color:#46cd84;color:#04190e;font-weight:650;
-    box-shadow:0 2px 9px rgba(60,189,119,.3)}
-  button.go:hover{background:linear-gradient(180deg,#69e2a1,#49c884)}
-  button.danger:hover{border-color:var(--bad);color:var(--bad);background:rgba(244,104,92,.08)}
-  button.sm{padding:4px 10px;font-size:12px;border-radius:6px}
+  button.primary{background:var(--grad);border:none;color:#0c0720;font-weight:700;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 6px 20px rgba(139,123,255,.34)}
+  button.primary:hover{filter:brightness(1.07)}
+  button.go{background:linear-gradient(180deg,#42e0a4,#22c386);border:none;color:#03190f;font-weight:700;
+    box-shadow:0 5px 16px rgba(52,211,153,.3)}
+  button.go:hover{filter:brightness(1.06)}
+  button.ghost{background:transparent;border-color:var(--line)}
+  button.danger:hover{border-color:var(--rose);color:var(--rose);background:rgba(251,111,132,.08)}
+  button.sm{padding:5px 11px;font-size:12px;border-radius:7px}
+  button.xs{padding:3px 8px;font-size:11px;border-radius:6px}
 
   input,select,textarea{font:inherit;background:var(--bg2);color:var(--text);border:1px solid var(--line2);
-    border-radius:var(--r3);padding:8px 11px;width:100%;transition:.14s;outline:none}
-  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,157,255,.16)}
+    border-radius:var(--r3);padding:9px 12px;width:100%;transition:.14s;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:var(--glow)}
   input::placeholder,textarea::placeholder{color:var(--faint)}
-  textarea{resize:vertical;line-height:1.5}
-  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%2398a2b3' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:28px}
-  label{font-size:11px;font-weight:500;color:var(--dim);display:block;margin:10px 0 4px;letter-spacing:.02em}
+  textarea{resize:vertical;line-height:1.55}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23969eb1' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+  label{font-size:11px;font-weight:550;color:var(--muted);display:block;margin:11px 0 5px;letter-spacing:.02em}
 
-  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .layout{display:grid;grid-template-columns:288px 1fr;height:100vh}
-  aside{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:18px 16px}
-  aside h1{font-size:17px;font-weight:700;margin:0;letter-spacing:-.01em;display:flex;align-items:center;gap:9px}
-  aside h1::before{content:"";width:11px;height:11px;border-radius:4px;background:linear-gradient(135deg,var(--accent),var(--violet));box-shadow:0 0 12px rgba(91,157,255,.6)}
-  aside .sub{color:var(--faint);font-size:11.5px;margin:3px 0 16px 20px}
-  aside h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin:6px 0 8px;font-weight:600}
-  .providers{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
-  .pchip{font-size:10.5px;font-weight:500;padding:3px 8px;border-radius:20px;background:var(--chip);border:1px solid var(--line);color:var(--faint)}
-  .pchip.on{color:var(--accent2);border-color:rgba(70,205,132,.3);background:rgba(70,205,132,.08)}
-  .pchip.off{color:var(--faint);opacity:.7}
-  .plist{list-style:none;margin:4px 0 14px;padding:0}
-  .plist li{padding:9px 11px;border-radius:var(--r2);cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:.12s}
-  .plist li:hover{background:var(--panel2)}
-  .plist li.sel{background:linear-gradient(90deg,rgba(91,157,255,.14),rgba(91,157,255,.04));border-color:rgba(91,157,255,.4)}
-  .plist .pt{font-weight:600;font-size:13px}
-  .plist .pm{font-size:11px;color:var(--faint);margin-top:1px}
-  .new-card{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:13px;margin-bottom:18px;box-shadow:var(--sh)}
-  .tabbtns{display:flex;gap:4px;margin-bottom:12px;background:var(--bg2);padding:3px;border-radius:8px;border:1px solid var(--line)}
-  .tabbtns button{flex:1;background:transparent;border:none;padding:5px 6px;font-size:12px;color:var(--dim);border-radius:6px}
-  .tabbtns button:hover{background:var(--panel3);color:var(--text);transform:none}
-  .tabbtns button.active{background:var(--panel3);color:var(--text);box-shadow:var(--sh)}
+  .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .spread{display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .muted{color:var(--muted)} .faint{color:var(--faint)}
+  .pill{font-size:12px;color:var(--faint)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .empty{color:var(--faint);font-size:12.5px;padding:9px 12px;font-style:italic}
 
-  main{overflow-y:auto;padding:26px 32px;max-width:1120px}
-  .muted{color:var(--dim)}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px;box-shadow:var(--sh)}
-  h2{font-size:21px;font-weight:700;margin:0 0 4px;letter-spacing:-.02em}
-  h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:0 0 12px;font-weight:600}
-  .pill{font-size:11.5px;color:var(--faint)}
-  .steps{display:flex;gap:8px;flex-wrap:wrap}
-  .step{display:flex;flex-direction:column;gap:7px;align-items:flex-start;background:var(--panel2);
-    border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:112px;transition:.14s}
-  .step:hover{border-color:var(--line2)}
-  .step .nm{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim)}
-  .step .st{font-size:11px;color:var(--faint)}
-  .step.done{border-color:rgba(70,205,132,.3);background:rgba(70,205,132,.05)}
-  .step.done .nm{color:var(--text)}
-  .step.done .st{color:var(--accent2)}
-  .scene{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;
-    display:grid;grid-template-columns:300px 1fr;gap:18px;box-shadow:var(--sh)}
+  /* ---------- layout ---------- */
+  .layout{display:grid;grid-template-columns:286px 1fr;height:100vh}
+  aside{background:linear-gradient(180deg,rgba(255,255,255,.015),transparent),var(--surface);
+    border-right:1px solid var(--line);overflow-y:auto;padding:20px 16px}
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:3px}
+  .logo{width:30px;height:30px;border-radius:9px;background:var(--grad);box-shadow:0 6px 18px rgba(139,123,255,.45);
+    display:grid;place-items:center;font-size:15px;flex:0 0 auto}
+  .brand h1{font-size:18px;font-weight:750;margin:0;letter-spacing:-.02em}
+  .brand .tag{font-size:11px;color:var(--faint);margin-top:1px}
+  aside h3{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);margin:20px 0 9px;font-weight:650}
+  .providers{display:flex;flex-wrap:wrap;gap:5px;margin:14px 0 4px}
+  .pchip{font-size:10px;font-weight:550;padding:3px 8px;border-radius:20px;background:var(--chip);border:1px solid var(--line);color:var(--faint)}
+  .pchip.on{color:var(--teal);border-color:rgba(52,211,153,.32);background:rgba(52,211,153,.08)}
+  .plist{list-style:none;margin:4px 0 8px;padding:0}
+  .plist li{padding:10px 12px;border-radius:var(--r2);cursor:pointer;border:1px solid transparent;margin-bottom:4px;transition:.13s}
+  .plist li:hover{background:var(--surface2)}
+  .plist li.sel{background:linear-gradient(90deg,rgba(139,123,255,.18),rgba(139,123,255,.03));border-color:rgba(139,123,255,.45)}
+  .plist .pt{font-weight:620;font-size:13px;display:flex;align-items:center;gap:7px}
+  .plist .pm{font-size:11px;color:var(--faint);margin-top:2px}
+  .chav{width:9px;height:9px;border-radius:3px;background:var(--grad);flex:0 0 auto}
+  details.side{border:1px solid var(--line);border-radius:var(--r2);background:var(--surface2);margin-top:10px;overflow:hidden}
+  details.side>summary{cursor:pointer;padding:10px 12px;font-size:11px;font-weight:600;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.05em;list-style:none;user-select:none}
+  details.side>summary::-webkit-details-marker{display:none}
+  details.side>summary:hover{color:var(--text)}
+  details.side .body{padding:0 12px 12px}
+  .tabbtns{display:flex;gap:4px;margin:4px 0 12px;background:var(--bg2);padding:3px;border-radius:9px;border:1px solid var(--line)}
+  .tabbtns button{flex:1;background:transparent;border:none;padding:6px;font-size:12px;color:var(--muted);border-radius:6px}
+  .tabbtns button:hover{background:var(--surface3);color:var(--text);transform:none}
+  .tabbtns button.active{background:var(--surface3);color:var(--text);box-shadow:var(--sh)}
+
+  main{overflow-y:auto;padding:30px 36px 80px}
+  .wrap{max-width:1140px;margin:0 auto}
+  h2{font-size:24px;font-weight:760;margin:0 0 5px;letter-spacing:-.025em}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent),var(--surface);
+    border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:18px;box-shadow:var(--sh)}
+  .card h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 13px;font-weight:650}
+  .titlebar{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:5px}
+  .status-tag{font-size:11px;font-weight:650;padding:3px 11px;border-radius:20px;border:1px solid var(--line2);color:var(--muted);text-transform:capitalize}
+  .status-tag.draft{color:var(--amber);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.07)}
+  .status-tag.ready{color:var(--cyan);border-color:rgba(70,200,245,.3);background:rgba(70,200,245,.07)}
+  .status-tag.published{color:var(--teal);border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.07)}
+
+  /* ---------- pipeline console (the centerpiece) ---------- */
+  .console{background:
+      radial-gradient(600px 200px at 12% -40%,rgba(139,123,255,.10),transparent 70%),
+      linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--surface);
+    border:1px solid var(--line2);border-radius:var(--r);padding:18px 18px 16px;margin-bottom:18px;box-shadow:var(--sh2)}
+  .console-top{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap}
+  .console-top .lede{font-size:12.5px;color:var(--muted)}
+  .console-top .lede b{color:var(--text);font-weight:650}
+  .produce{font-size:14px;padding:10px 20px;border-radius:11px}
+  .pflow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:4px 2px 10px}
+  .pnode{position:relative;flex:1 1 0;min-width:104px;display:flex;flex-direction:column;align-items:center;gap:6px;
+    padding:12px 8px 10px;border-radius:13px;border:1px solid transparent;cursor:pointer;transition:.15s;text-align:center}
+  .pnode:hover{background:var(--surface2);border-color:var(--line)}
+  .pnode::after{content:"";position:absolute;top:30px;right:-1px;width:calc(100% - 64px);height:2px;
+    background:var(--line);transform:translateX(50%);z-index:0}
+  .pnode:last-child::after{display:none}
+  .pnode .pdot{position:relative;z-index:1;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;
+    font-size:16px;font-weight:700;background:var(--surface3);border:2px solid var(--line2);color:var(--faint);transition:.18s}
+  .pnode .plabel{font-size:12px;font-weight:650;color:var(--muted)}
+  .pnode .pnote{font-size:10.5px;color:var(--faint);min-height:13px}
+  .pnode .pacts{display:flex;gap:4px;opacity:.42;transition:.15s}
+  .pnode:hover .pacts,.pnode:focus-within .pacts{opacity:1}
+  .console.busy{opacity:.7;pointer-events:none}
+  .console.busy .pipelog{pointer-events:auto}
+  .pnode .pacts button{padding:2px 7px;font-size:11px;border-radius:6px}
+  /* node states */
+  .pnode.done .pdot{background:rgba(52,211,153,.14);border-color:var(--teal);color:var(--teal);box-shadow:0 0 14px rgba(52,211,153,.25)}
+  .pnode.done .plabel{color:var(--text)} .pnode.done::after{background:linear-gradient(90deg,var(--teal),var(--line))}
+  .pnode.partial .pdot{background:rgba(251,191,36,.12);border-color:var(--amber);color:var(--amber)}
+  .pnode.partial .plabel{color:var(--text)}
+  .pnode.ready .pdot{border-color:var(--primary);color:var(--primary);background:rgba(139,123,255,.1)}
+  .pnode.ready .plabel{color:var(--text)}
+  .pnode.error .pdot{background:rgba(251,111,132,.14);border-color:var(--rose);color:var(--rose)}
+  .pnode.error .plabel{color:var(--rose)}
+  .pnode.running .pdot{border-color:var(--amber);color:transparent;background:rgba(251,191,36,.08);
+    box-shadow:0 0 0 0 rgba(251,191,36,.5);animation:pulse 1.4s infinite}
+  .pnode.running .pdot::before{content:"";position:absolute;inset:-2px;border-radius:50%;
+    border:2px solid transparent;border-top-color:var(--amber);border-right-color:var(--amber);animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(251,191,36,.45)}70%{box-shadow:0 0 0 10px rgba(251,191,36,0)}100%{box-shadow:0 0 0 0 rgba(251,191,36,0)}}
+  /* inline pipeline log */
+  .pipelog{display:none;margin-top:6px;border-top:1px solid var(--line);padding-top:12px}
+  .pipelog.show{display:block}
+  .pipelog .head{display:flex;align-items:center;gap:10px;font-size:13px}
+  .pipelog .head .ic{font-size:14px}
+  .pipelog .head .st{font-weight:600}
+  .pipelog .head .toggle{margin-left:auto;font-size:11.5px;color:var(--muted);cursor:pointer;background:none;border:none;padding:3px 8px}
+  .pipelog .head .toggle:hover{color:var(--text)}
+  .pipelog .body{display:none;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--muted);
+    white-space:pre-wrap;max-height:200px;overflow:auto;margin-top:10px;background:var(--bg);border-radius:9px;padding:11px 13px;border:1px solid var(--line)}
+  .pipelog.open .body{display:block}
+  .spin-mini{display:inline-block;width:13px;height:13px;border:2px solid var(--line2);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
+
+  /* ---------- output + thumbnails ---------- */
+  video{width:100%;max-width:640px;border-radius:var(--r2);background:#000;border:1px solid var(--line)}
+  .thumbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+  .thumbv{position:relative;border:2px solid var(--line);border-radius:11px;overflow:hidden;cursor:pointer;transition:.14s;background:#000}
+  .thumbv:hover{border-color:var(--line2);transform:translateY(-2px)}
+  .thumbv.sel{border-color:var(--teal);box-shadow:0 0 0 3px rgba(52,211,153,.2)}
+  .thumbv img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover}
+  .thumbv .badge{position:absolute;top:7px;left:7px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;
+    background:rgba(8,9,13,.78);color:var(--muted);backdrop-filter:blur(4px)}
+  .thumbv.sel .badge{background:var(--teal);color:#03190f}
+
+  /* ---------- scenes ---------- */
+  .scene{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:16px;margin-bottom:13px;
+    display:grid;grid-template-columns:290px 1fr;gap:18px;box-shadow:var(--sh)}
   .scene .vis img{width:100%;border-radius:10px;display:block;background:#000;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--line)}
   .scene .vis .noimg{width:100%;aspect-ratio:16/9;border:1px dashed var(--line2);border-radius:10px;display:flex;
     align-items:center;justify-content:center;color:var(--faint);font-size:12px;background:var(--bg2)}
-  .vtag{font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:20px;background:var(--chip);border:1px solid var(--line);text-transform:uppercase;letter-spacing:.04em;color:var(--dim)}
-  .vtag.generate{color:var(--warn);border-color:rgba(227,179,65,.3);background:rgba(227,179,65,.08)}
-  .vtag.chart{color:var(--accent);border-color:rgba(91,157,255,.3);background:rgba(91,157,255,.08)}
-  .vtag.photo_edit{color:var(--violet);border-color:rgba(180,140,255,.3);background:rgba(180,140,255,.08)}
-  .vtag.search{color:var(--accent2);border-color:rgba(70,205,132,.3);background:rgba(70,205,132,.08)}
+  .vtag{font-size:9.5px;font-weight:650;padding:2px 8px;border-radius:20px;background:var(--chip);border:1px solid var(--line);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .vtag.generate{color:var(--amber);border-color:rgba(251,191,36,.32);background:rgba(251,191,36,.08)}
+  .vtag.chart{color:var(--cyan);border-color:rgba(70,200,245,.32);background:rgba(70,200,245,.08)}
+  .vtag.photo_edit{color:var(--primary2);border-color:rgba(200,125,255,.32);background:rgba(200,125,255,.08)}
+  .vtag.search{color:var(--teal);border-color:rgba(52,211,153,.32);background:rgba(52,211,153,.08)}
   audio{width:100%;margin-top:10px;height:34px}
-  .scene-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-  .jobbar{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r2);padding:11px 14px;margin-bottom:14px}
-  .jobbar.run{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,157,255,.1)}
-  .jobbar.err{border-color:var(--bad)}
-  .gstatus{position:fixed;bottom:18px;right:18px;max-width:420px;z-index:50;display:none;
-    background:var(--panel2);border:1px solid var(--accent);border-radius:var(--r);padding:12px 16px;box-shadow:var(--sh2)}
-  .gstatus.err{border-color:var(--bad)}
-  .joblog{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--dim);white-space:pre-wrap;
-    max-height:150px;overflow:auto;margin-top:8px;background:var(--bg);border-radius:7px;padding:9px 11px;border:1px solid var(--line)}
-  .ideas{display:flex;flex-direction:column;gap:8px}
-  .idea{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r2);padding:11px;transition:.12s}
-  .idea:hover{border-color:var(--line2)}
-  .idea .it{font-weight:600;font-size:13px}
-  .idea .ih{font-size:12px;color:var(--dim);margin-top:3px;line-height:1.4}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-  video{width:100%;max-width:680px;border-radius:var(--r);background:#000;border:1px solid var(--line)}
-  .chat{display:flex;flex-direction:column;gap:11px;max-height:50vh;overflow-y:auto;padding:6px 4px 2px}
-  .msg{max-width:82%;padding:10px 14px;border-radius:14px;white-space:pre-wrap;line-height:1.5;font-size:13.5px;box-shadow:var(--sh)}
-  .msg.creator{align-self:flex-end;background:linear-gradient(180deg,#2b4a78,#244069);border:1px solid #335584;border-bottom-right-radius:5px;color:#eaf1fb}
-  .msg.strategist{align-self:flex-start;background:var(--panel2);border:1px solid var(--line2);border-bottom-left-radius:5px}
-  .chatbox{display:flex;gap:8px;margin-top:14px}
+  .scene-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+
+  /* ---------- collapsibles ---------- */
+  details.block{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);margin-bottom:18px;overflow:hidden}
+  details.block[open]{box-shadow:var(--sh)}
+  details.block>summary{cursor:pointer;padding:15px 18px;font-size:12px;font-weight:620;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.05em;list-style:none;display:flex;align-items:center;gap:9px;user-select:none;transition:.12s}
+  details.block>summary:hover{color:var(--text);background:var(--surface2)}
+  details.block>summary::-webkit-details-marker{display:none}
+  details.block>summary::before{content:"▸";color:var(--faint);transition:.15s;font-size:11px}
+  details.block[open]>summary::before{transform:rotate(90deg)}
+  details.block .body{padding:4px 18px 18px}
+
+  /* ---------- chat ---------- */
+  .chat{display:flex;flex-direction:column;gap:11px;max-height:46vh;overflow-y:auto;padding:6px 4px 2px}
+  .msg{max-width:84%;padding:11px 15px;border-radius:15px;white-space:pre-wrap;line-height:1.5;font-size:13.5px;box-shadow:var(--sh)}
+  .msg.user{align-self:flex-end;background:var(--grad);color:#0c0720;border-bottom-right-radius:5px;font-weight:500}
+  .msg.bot{align-self:flex-start;background:var(--surface2);border:1px solid var(--line2);border-bottom-left-radius:5px}
+  .chatbox{display:flex;gap:9px;margin-top:14px}
   .chatbox textarea{flex:1;min-height:48px}
-  .briefcard{background:linear-gradient(180deg,rgba(70,205,132,.12),rgba(70,205,132,.04));border:1px solid rgba(70,205,132,.3);
-    border-radius:var(--r2);padding:13px;margin-top:2px;align-self:flex-start;max-width:82%}
-  /* suggestion chips */
-  .suggs{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
-  .sugg{font-size:12px;color:var(--accent);background:rgba(91,157,255,.08);border:1px solid rgba(91,157,255,.28);
-    padding:5px 11px;border-radius:20px;cursor:pointer;transition:.12s}
-  .sugg:hover{background:rgba(91,157,255,.16);transform:translateY(-1px)}
-  /* typing indicator */
+  .briefcard{background:linear-gradient(180deg,rgba(52,211,153,.12),rgba(52,211,153,.03));border:1px solid rgba(52,211,153,.3);
+    border-radius:var(--r2);padding:14px;margin-top:2px;align-self:flex-start;max-width:84%}
+  .suggs{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+  .sugg{font-size:12px;color:var(--primary);background:rgba(139,123,255,.08);border:1px solid rgba(139,123,255,.3);
+    padding:6px 12px;border-radius:20px;cursor:pointer;transition:.12s}
+  .sugg:hover{background:rgba(139,123,255,.17);transform:translateY(-1px)}
   .typing{display:inline-flex;gap:4px;align-items:center}
-  .typing i{width:6px;height:6px;border-radius:50%;background:var(--dim);animation:bln 1.2s infinite ease-in-out}
+  .typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:bln 1.2s infinite ease-in-out}
   .typing i:nth-child(2){animation-delay:.2s} .typing i:nth-child(3){animation-delay:.4s}
   @keyframes bln{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
-  /* collapsible sections (quick tools, manual controls) */
-  details{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);margin-bottom:16px;overflow:hidden}
-  details[open]{box-shadow:var(--sh)}
-  summary{cursor:pointer;padding:13px 16px;font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;
-    letter-spacing:.05em;list-style:none;display:flex;align-items:center;gap:8px;user-select:none;transition:.12s}
-  summary:hover{color:var(--text);background:var(--panel2)}
-  summary::-webkit-details-marker{display:none}
-  summary::before{content:"▸";color:var(--faint);transition:.15s;font-size:11px}
-  details[open] summary::before{transform:rotate(90deg)}
-  details .body{padding:0 16px 16px}
-  details.side{background:var(--panel2);margin:0 0 16px}
-  details.side summary{padding:9px 11px;font-size:11px}
-  details.side .body{padding:0 11px 11px}
-  .empty{color:var(--faint);font-size:12px;padding:8px 11px;font-style:italic}
-  /* channel video board */
-  .board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
-  .col{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;min-height:120px}
-  .colhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;
-    font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--dim)}
-  .colhead .cnt{background:var(--chip);border:1px solid var(--line);border-radius:20px;padding:1px 8px;color:var(--faint)}
-  .vcard{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r2);padding:10px;margin-bottom:9px;cursor:pointer;transition:.12s}
-  .vcard:hover{border-color:var(--accent);transform:translateY(-1px)}
-  .vthumb{width:100%;aspect-ratio:16/9;border-radius:7px;object-fit:cover;background:#000;display:block;border:1px solid var(--line)}
-  .vthumb.noimg2{display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:20px;background:var(--bg2)}
-  .vcard .vt{font-weight:600;font-size:13px;margin:8px 0 2px;line-height:1.3}
-  .vcard .vm{font-size:11px;color:var(--faint);margin-bottom:7px}
-  .statussel{font-size:11px;padding:4px 7px}
+
+  /* ---------- channel board ---------- */
+  .board{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:18px}
+  .col{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:13px;min-height:120px}
+  .colhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;
+    font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .colhead .cnt{background:var(--chip);border:1px solid var(--line);border-radius:20px;padding:1px 9px;color:var(--faint)}
+  .vcard{background:var(--surface2);border:1px solid var(--line);border-radius:var(--r2);padding:11px;margin-bottom:10px;cursor:pointer;transition:.13s}
+  .vcard:hover{border-color:var(--primary);transform:translateY(-2px)}
+  .vthumb{width:100%;aspect-ratio:16/9;border-radius:8px;object-fit:cover;background:#000;display:block;border:1px solid var(--line)}
+  .vthumb.noimg2{display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:21px;background:var(--bg2)}
+  .vcard .vt{font-weight:620;font-size:13px;margin:9px 0 2px;line-height:1.3}
+  .vcard .vm{font-size:11px;color:var(--faint);margin-bottom:8px}
+  .statussel{font-size:11px;padding:5px 8px}
+
+  /* ---------- toast (background jobs w/ no project open) ---------- */
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:60;min-width:300px;max-width:520px;display:none;
+    background:var(--surface2);border:1px solid var(--line2);border-radius:var(--r);padding:13px 16px;box-shadow:var(--sh2)}
+  .toast.show{display:block}
+  .toast.err{border-color:var(--rose)}
+  .toast .body{display:none;font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);white-space:pre-wrap;
+    max-height:160px;overflow:auto;margin-top:9px;background:var(--bg);border-radius:8px;padding:9px 11px;border:1px solid var(--line)}
+  .toast.open .body{display:block}
+
+  .hero{max-width:600px;margin:9vh auto 0;text-align:center}
+  .hero .orb{width:88px;height:88px;border-radius:26px;margin:0 auto 22px;background:var(--grad);
+    box-shadow:0 24px 60px rgba(139,123,255,.5);display:grid;place-items:center;font-size:40px}
 </style>
 </head>
 <body>
 <div class="layout">
   <aside>
-    <h1>autovid</h1>
-    <div class="sub">multi-agent video studio</div>
+    <div class="brand">
+      <div class="logo">🎬</div>
+      <div><h1>autovid</h1><div class="tag">multi-agent video studio</div></div>
+    </div>
     <div class="providers" id="providers"></div>
 
     <h3>Channels</h3>
-    <button class="primary" id="chadd" style="width:100%;margin-bottom:9px">＋ New channel</button>
-    <input id="chname" type="hidden">
-    <ul class="plist" id="channels"></ul>
-    <button class="sm" id="settingsbtn" style="width:100%;margin-top:6px">⚙ Settings &amp; usage</button>
+    <button class="primary" id="chadd" style="width:100%">＋ New channel</button>
+    <ul class="plist" id="channels" style="margin-top:10px"></ul>
+    <button class="sm ghost" id="settingsbtn" style="width:100%">⚙ Settings &amp; usage</button>
 
-    <details class="side" style="margin-top:16px">
+    <details class="side">
       <summary>⚡ Quick create (no channel)</summary>
       <div class="body">
         <div class="tabbtns" id="newtabs">
-          <button data-m="director" class="active sm">Director</button>
-          <button data-m="ideas" class="sm">Ideas</button>
-          <button data-m="topic" class="sm">Quick</button>
-          <button data-m="batch" class="sm">Batch</button>
+          <button data-m="director" class="active">Director</button>
+          <button data-m="ideas">Ideas</button>
+          <button data-m="topic">Quick</button>
+          <button data-m="batch">Batch</button>
         </div>
         <div id="newbody"></div>
       </div>
     </details>
   </aside>
 
-  <main id="main"><p class="muted">Loading…</p></main>
+  <main><div class="wrap" id="main"><p class="muted">Loading…</p></div></main>
 </div>
-<div id="gstatus"></div>
+<div class="toast" id="toast"></div>
 
 <script>
+"use strict";
 async function _fail(r){ const e = await r.json().catch(()=>null); return new Error((e&&(e.detail||e.error))||('HTTP '+r.status)); }
 const api = {
   async get(u){ const r = await fetch(u); if(!r.ok) throw await _fail(r); return r.json(); },
@@ -201,26 +284,37 @@ const api = {
   post(u,b){return this.send('POST',u,b)}, patch(u,b){return this.send('PATCH',u,b)}, del(u){return this.send('DELETE',u)},
 };
 const $ = s => document.querySelector(s);
-const el = (t,p={},...kids)=>{const e=document.createElement(t);Object.assign(e,p);for(const k of kids)e.append(k);return e;};
+const el = (t,p={},...kids)=>{const e=document.createElement(t);Object.assign(e,p);for(const k of kids)if(k!=null&&k!==false)e.append(k);return e;};
 const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const wrap=(lbl,node)=>el('div',{},el('label',{textContent:lbl}),node);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-let CFG=null, CUR=null, NEWMODE='director';
+let CFG=null, CUR=null, CURCH=null, NEWMODE='director';
+let PROJECTS=[], CHANNEL_SLUGS=new Set();
+let NAV_SEQ=0;                 // newest navigation wins (drops stale async opens)
+let LAST_STAGE=null, LAST_JOB=null, LAST_SLUG=null;   // last pipeline job (scoped to its project) so its log survives a re-render
 
+// ============================ boot ============================
 async function boot(){
   CFG = await api.get('/api/config');
   renderProviders();
   renderNewBody();
   $('#newtabs').addEventListener('click', e=>{ if(e.target.dataset.m){NEWMODE=e.target.dataset.m;
     [...$('#newtabs').children].forEach(b=>b.classList.toggle('active',b.dataset.m===NEWMODE)); renderNewBody();}});
-  $('#chadd').addEventListener('click', ()=>{ const n=$('#chname').value.trim(); $('#chname').value=''; openNewChannelChat(n); });
+  $('#chadd').addEventListener('click', ()=>openNewChannelChat(''));
   $('#settingsbtn').addEventListener('click', openSettings);
-  $('#chname').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#chadd').click(); });
-  $('#chname').placeholder = 'new channel → setup chat';
   await refreshProjects();
   await refreshChannels();
   window.addEventListener('hashchange', routeFromHash);
-  if(!routeFromHash())
-    $('#main').innerHTML = '<div style="max-width:560px;margin:8vh auto 0;text-align:center"><div style="font-size:42px;margin-bottom:8px">🎬</div><h2 style="font-size:24px">Your video studio</h2><p class="muted" style="font-size:15px;line-height:1.6">Create a <b style="color:var(--text)">Channel</b> by chatting — the assistant writes its rules + recurring intro/outro/CTA. Then hit <b style="color:var(--text)">＋ New video</b> and just tell the producer what to make. Manual controls stay below for fine-tuning.</p></div>';
+  if(!routeFromHash()) renderHome();
+}
+function renderHome(){
+  CUR=CURCH=null; selSidebar(null);
+  $('#main').innerHTML = '<div class="hero"><div class="orb">🎬</div>'+
+    '<h2 style="font-size:27px">Your video studio</h2>'+
+    '<p class="muted" style="font-size:15px;line-height:1.65">Spin up a <b style="color:var(--text)">Channel</b> by chatting — the assistant writes its rules and recurring intro / sign-off / CTA. '+
+    'Then hit <b style="color:var(--text)">＋ New video</b>, tell the producer what to make, and run the whole pipeline from one bar. '+
+    'Manual controls stay tucked away for fine-tuning.</p></div>';
 }
 function routeFromHash(){
   const h=location.hash;
@@ -229,116 +323,393 @@ function routeFromHash(){
   if(h==='#settings'){ openSettings(); return true; }
   return false;
 }
-
-// ---------- settings: per-agent models + token usage / balance ----------
-const AGENT_LABELS={screenwriter:'Screenwriter',humanizer:'Humanizer',art_director:'Art Director',
-  voice_director:'Voice Director',sound_designer:'Sound Designer',showrunner:'Showrunner',
-  producer:'Producer (workspace chat)',strategist:'Strategist (channel chats)'};
-async function openSettings(){
-  CUR=null;CURCH=null; selSidebar('__settings__'); history.replaceState(null,'','#settings');
-  const m=$('#main'); m.innerHTML='<p class="muted">Loading…</p>';
-  let st,us; try{ [st,us]=await Promise.all([api.get('/api/settings'),api.get('/api/usage')]); }
-  catch(e){ m.innerHTML='<p style="color:var(--bad)">'+esc(e.message)+'</p>'; return; }
-  m.innerHTML=''; m.append(el('h2',{textContent:'Settings'}));
-  const card=el('div',{className:'card'}); card.append(el('h3',{textContent:'Agent models — choose the LLM each agent uses'}));
-  const grid=el('div',{className:'grid2'});
-  st.agent_keys.forEach(k=>{
-    const sel=el('select',{onchange:async()=>{ try{ await api.send('PUT','/api/settings',{agents:{[k]:sel.value}}); }catch(e){ alert(e.message); } }});
-    st.models.forEach(mo=>sel.append(el('option',{value:mo.id,textContent:mo.label,selected:(st.agents[k]||'')===mo.id})));
-    grid.append(wrap(AGENT_LABELS[k]||k, sel));
-  });
-  card.append(grid);
-  card.append(el('div',{className:'pill',style:'margin-top:10px',textContent:'“Default (auto)” = your configured default. Provider is inferred from the model (claude→Anthropic, gpt→OpenAI, else local Ollama). You can also change a model mid-flight here.'}));
-  m.append(card);
-  m.append(renderUsage(us));
-}
-function statBox(label,val){ return el('div',{style:'min-width:120px'},el('div',{className:'pill',textContent:label}),
-  el('div',{style:'font-size:19px;font-weight:700;margin-top:3px',textContent:String(val)})); }
-function renderUsage(us){
-  const card=el('div',{className:'card'});
-  card.append(el('div',{className:'row',style:'justify-content:space-between'},
-    el('h3',{textContent:'Token usage & balance'}),
-    el('button',{className:'sm',textContent:'↻ refresh',onclick:async()=>{ try{ card.replaceWith(renderUsage(await api.get('/api/usage'))); }catch(e){} }})));
-  const bal=us.balances||{}, t=us.totals||{};
-  card.append(el('div',{className:'row',style:'gap:22px;margin-bottom:14px;flex-wrap:wrap'},
-    statBox('ai33 credits', bal.ai33_credits!=null?Number(bal.ai33_credits).toLocaleString():'—'),
-    statBox('Est. spend', '$'+(t.cost||0).toFixed(4)),
-    statBox('Requests', t.calls||0),
-    statBox('Tokens in / out', (t.in||0).toLocaleString()+' / '+(t.out||0).toLocaleString())));
-  const recent=us.recent||[];
-  card.append(el('div',{className:'pill',style:'margin-bottom:4px',textContent:'Recent requests'}));
-  if(!recent.length) card.append(el('div',{className:'empty',textContent:'No LLM calls yet this session.'}));
-  recent.slice(0,25).forEach(r=>card.append(el('div',{style:'display:flex;gap:14px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--line);color:var(--dim)'},
-    el('span',{style:'flex:0 0 110px;color:var(--accent)',textContent:r.kind}),
-    el('span',{style:'flex:1',textContent:r.model}),
-    el('span',{style:'flex:0 0 110px;textAlign:right',textContent:r.in+' → '+r.out}),
-    el('span',{style:'flex:0 0 80px;text-align:right',textContent:'$'+(r.cost||0).toFixed(5)}))));
-  card.append(el('div',{className:'pill',style:'margin-top:10px;color:var(--faint)',textContent:'Anthropic & OpenAI don’t expose account balance via API — “Est. spend” is from token counts × list price (a guide, not a bill). ai33 balance is live.'}));
-  return card;
-}
-
 function renderProviders(){
-  const p = CFG.providers;
-  $('#providers').replaceChildren(...Object.entries(p).map(([k,v])=>
+  $('#providers').replaceChildren(...Object.entries(CFG.providers).map(([k,v])=>
     el('span',{className:'pchip '+(v?'on':'off'),textContent:(v?'● ':'○ ')+k})));
 }
+const main=()=>$('#main');
 
-function renderNewBody(){
-  const b = $('#newbody'); b.innerHTML='';
-  const niche = el('select',{}); CFG.niches.forEach(n=>niche.append(el('option',{value:n,textContent:n})));
-  const aspect = el('select',{}); ['16:9','9:16'].forEach(a=>aspect.append(el('option',{value:a,textContent:a})));
-  const secs = el('input',{type:'number',value:60,min:15});
-  if(NEWMODE==='director'||NEWMODE==='topic'){
-    const inp = el('input',{placeholder: NEWMODE==='director'?'theme or topic (the agent team builds it)':'topic'});
-    b.append(el('label',{textContent:NEWMODE==='director'?'Director — topic / theme':'Quick — topic'}), inp,
-      el('label',{textContent:'niche'}),niche, el('div',{className:'grid2'},
-        wrap('seconds',secs), wrap('aspect',aspect)),
-      el('button',{className:'primary',style:'margin-top:10px;width:100%',textContent:
-        NEWMODE==='director'?'Run director ▸':'Generate ▸',
-        onclick:()=>createProject({mode:NEWMODE,topic:inp.value,niche:niche.value,seconds:+secs.value,aspect:aspect.value})}));
-  } else if(NEWMODE==='batch'){
-    const inp = el('input',{placeholder:'theme / niche'}); const n = el('input',{type:'number',value:3,min:1,max:8});
-    b.append(el('label',{textContent:'Batch — theme'}), inp, el('div',{className:'grid2'},wrap('count',n),wrap('aspect',aspect)),
-      el('label',{textContent:'niche'}),niche,
-      el('button',{className:'primary',style:'margin-top:10px;width:100%',textContent:'Brainstorm + build N ▸',
-        onclick:()=>createProject({mode:'batch',theme:inp.value,n:+n.value,niche:niche.value,aspect:aspect.value})}));
-  } else if(NEWMODE==='ideas'){
-    const inp = el('input',{placeholder:'theme to brainstorm'}); const n = el('input',{type:'number',value:5,min:2,max:10});
-    const out = el('div',{className:'ideas',style:'margin-top:10px'});
-    b.append(el('label',{textContent:'Brainstorm storylines'}), inp, el('div',{className:'grid2'},wrap('count',n),wrap('niche',niche)),
-      el('button',{className:'primary',style:'margin-top:10px;width:100%',textContent:'Brainstorm ▸',
-        onclick:async()=>{ out.innerHTML='<span class="muted">thinking…</span>';
-          try{ const j = await runJob(await api.post('/api/ideas',{theme:inp.value,n:+n.value,niche:niche.value}));
-            out.replaceChildren(...(j.result.ideas||[]).map(id=>renderIdea(id,aspect.value,niche.value)));
-          }catch(e){ out.innerHTML='<span style="color:var(--bad)">'+esc(e.message)+'</span>'; } }}), out);
+// ============================ job polling ============================
+// Poll a job to completion, calling onUpdate(job) each tick. Throws on error.
+async function pollJob(job, onUpdate){
+  if(onUpdate) onUpdate(job);
+  while(job.status==='queued'||job.status==='running'){
+    await sleep(1100);
+    job = await api.get('/api/jobs/'+job.id);
+    if(onUpdate) onUpdate(job);
   }
+  if(job.status==='error') throw new Error(job.error||'job failed');
+  return job;
 }
-const wrap=(lbl,node)=>el('div',{},el('label',{textContent:lbl}),node);
-
-function renderIdea(idea, aspect, niche){
-  return el('div',{className:'idea'},
-    el('div',{className:'it',textContent:idea.title}),
-    idea.hook?el('div',{className:'ih',textContent:'“'+idea.hook+'”'}):'',
-    idea.angle?el('div',{className:'ih',textContent:idea.angle}):'',
-    el('button',{className:'go sm',style:'margin-top:8px',textContent:'Build this ▸',
-      onclick:()=>createProject({mode:'idea',idea,niche,aspect})}));
+// Toast-rendered job (used when no project console is on screen: create/director/ideas/draft).
+async function runJob(job, title){
+  const t=$('#toast');
+  const draw=j=>{
+    t.className='toast show'+(j.status==='error'?' err':'')+(t.classList.contains('open')?' open':'');
+    t.innerHTML='';
+    const running=j.status==='queued'||j.status==='running';
+    t.append(el('div',{className:'row',style:'justify-content:space-between'},
+      el('div',{className:'row'},
+        running?el('span',{className:'spin-mini'}):el('span',{textContent:j.status==='error'?'⚠':'✓'}),
+        el('b',{textContent:(title||j.kind)+' · '+j.status})),
+      el('button',{className:'xs ghost',textContent:'log',onclick:()=>{t.classList.toggle('open');}})));
+    if(j.error) t.append(el('div',{style:'color:var(--rose);font-size:12px;margin-top:6px',textContent:j.error}));
+    const body=el('div',{className:'body',textContent:(j.log||'').slice(-4000)}); t.append(body); body.scrollTop=body.scrollHeight;
+  };
+  try{ const done=await pollJob(job,draw); setTimeout(()=>{t.className='toast';},3500); return done; }
+  catch(e){ draw({...job,status:'error',error:e.message}); setTimeout(()=>{t.className='toast';},6000); throw e; }
 }
 
-// videos are scoped inside channels now; we just cache the full list and group it.
-let PROJECTS=[], CHANNEL_SLUGS=new Set();
+// ============================ projects ============================
 async function refreshProjects(){ PROJECTS=(await api.get('/api/projects')).projects; }
-// a project's effective channel — '' (Unfiled) if its channel was deleted/unknown.
 function effChannel(p){ return (p && p.channel && CHANNEL_SLUGS.has(p.channel)) ? p.channel : ''; }
 function selSidebar(key){ const ul=$('#channels'); if(ul)[...ul.children].forEach(li=>li.classList.toggle('sel', li.dataset.slug===key)); }
-function refreshBoardView(){ if(!CURCH) return; if(CURCH.slug==='__unfiled__') openUnfiled(); else renderChannel(); }
+function refreshBoardView(){ if(!CURCH) return; CURCH.slug==='__unfiled__'?openUnfiled():renderChannel(); }
 
 async function openProject(slug){
-  CUR = await api.get('/api/projects/'+slug); CURCH=null;
-  history.replaceState(null,'','#p/'+slug);
+  const my=++NAV_SEQ; let data;
+  try{ data = await api.get('/api/projects/'+slug); }
+  catch(e){ if(my===NAV_SEQ) main().innerHTML='<p style="color:var(--rose)">'+esc(e.message)+'</p>'; return; }
+  if(my!==NAV_SEQ) return;   // a newer navigation superseded this one
+  CUR=data; CURCH=null; history.replaceState(null,'','#p/'+slug);
   selSidebar(effChannel(CUR)||'__unfiled__');
   renderProject();
 }
 
+// ---------- the pipeline ----------
+const PIPELINE=[
+  {key:'humanize', label:'Humanize', hint:'Rewrite the raw script so it sounds human'},
+  {key:'parse',    label:'Scenes',   hint:'Split the script into scenes (re-running replaces scenes)'},
+  {key:'visuals',  label:'Visuals',  hint:'Find / make each scene image (search · photo · chart · AI)'},
+  {key:'tts',      label:'Voice',    hint:'Voice every scene'},
+  {key:'montage',  label:'Render',   hint:'Assemble scenes into the video'},
+  {key:'audiomix', label:'Audio',    hint:'Mix SFX cues + a music bed onto the video'},
+  {key:'thumbnail',label:'Thumb',    hint:'Design thumbnail variants'},
+];
+function stageStatus(key){
+  const s=CUR.steps, hasScript=!!(CUR.script_raw||CUR.script_human), hasScenes=(CUR.scenes||[]).length>0;
+  switch(key){
+    case 'humanize': return s.humanize?{state:'done',note:'humanized'}:{state:hasScript?'ready':'todo',note:'optional'};
+    case 'parse':    return s.parse.done?{state:'done',note:s.parse.scenes+' scenes'}:{state:hasScript?'ready':'todo',note:'no scenes'};
+    case 'visuals':  return s.images.done?{state:'done',note:'all set'}:(s.images.have?{state:'partial',note:s.images.have+'/'+s.images.total}:{state:hasScenes?'ready':'todo',note:'none'});
+    case 'tts':      return s.tts.done?{state:'done',note:'voiced'}:(s.tts.have?{state:'partial',note:s.tts.have+'/'+s.tts.total}:{state:hasScenes?'ready':'todo',note:'silent'});
+    case 'montage':  return s.montage?{state:'done',note:'rendered'}:{state:(s.images.have||s.tts.have)?'ready':'todo',note:'not built'};
+    case 'audiomix': return s.audiomix?{state:'done',note:'sfx + music'}:(s.montage?{state:'ready',note:'sfx + music'}:{state:'todo',note:'needs render'});
+    case 'thumbnail':{const n=(CUR.thumbnail_variants||[]).length; return s.thumbnail?{state:'done',note:(n||1)+' variant'+((n||1)>1?'s':'')}:{state:hasScenes?'ready':'todo',note:'none'};}
+  }
+}
+const STATE_ICON={done:'✓',partial:'◐',ready:'▸',todo:'·',error:'✕'};
+let NODES={};               // key -> node element (for live updates during a run)
+let RUNNING=false;          // a stage/produce chain is in flight
+let LOGOPEN=false;          // user toggled the inline log open
+
+function renderPipeline(){
+  NODES={};
+  const c=el('div',{className:'console'+(RUNNING?' busy':'')});
+  const hasScenes=(CUR.scenes||[]).length>0, hasScript=!!(CUR.script_raw||CUR.script_human);
+  // top bar: produce button + meta
+  const produceBtn=el('button',{className:'primary produce',textContent:'▶ Produce video',
+    onclick:()=>{ if(hasScenes) produce('visuals'); else if(hasScript) produce('parse');
+      else { toastMsg('Write a script first — tell the producer below what to make.'); $('#agentinput')&&$('#agentinput').focus(); } }});
+  c.append(el('div',{className:'console-top'},
+    el('div',{className:'lede'}, el('b',{textContent:'Production pipeline'}),
+      el('span',{textContent:'  —  click any stage to run it · ↻ force · ▶ from here'})),
+    produceBtn));
+  // flow of nodes
+  const flow=el('div',{className:'pflow'});
+  PIPELINE.forEach(stg=>{
+    const st=stageStatus(stg.key);
+    const node=el('div',{className:'pnode '+st.state,title:stg.hint,
+      onclick:e=>{ if(e.target.tagName==='BUTTON')return; runStage(stg.key); }});
+    node.append(
+      el('div',{className:'pdot'},el('span',{textContent:STATE_ICON[st.state]||''})),
+      el('div',{className:'plabel',textContent:stg.label}),
+      el('div',{className:'pnote',textContent:st.note}),
+      el('div',{className:'pacts'},
+        el('button',{className:'xs ghost',title:'force redo this stage',textContent:'↻',onclick:()=>runStage(stg.key,{force:true})}),
+        el('button',{className:'xs ghost',title:'produce from here (re-runs this stage onward)',textContent:'▶',onclick:()=>produce(stg.key,{force:true})})));
+    NODES[stg.key]=node; flow.append(node);
+  });
+  c.append(flow);
+  // inline log — visible while a stage runs, and kept available afterwards so the
+  // last run's output survives the post-run re-render (hidden only before any run).
+  const lg=el('div',{className:'pipelog'+(LOGOPEN?' open':''),id:'pipelog'});
+  lg.append(el('div',{className:'head'},
+    el('span',{className:'ic',id:'pllog-ic'}), el('span',{className:'st',id:'pllog-st'}),
+    el('button',{className:'toggle',id:'pllog-toggle',textContent:LOGOPEN?'hide log ▴':'show log ▾',
+      onclick:()=>{LOGOPEN=!LOGOPEN; lg.classList.toggle('open',LOGOPEN); syncLogToggle();}})),
+    el('div',{className:'body',id:'pllog-body'}));
+  c.append(lg);
+  const ownLog=LAST_JOB&&LAST_SLUG===CUR.slug;   // only resurrect THIS project's log
+  if(RUNNING||ownLog) lg.classList.add('show');
+  setTimeout(()=>{ syncLogToggle(); if(!RUNNING&&ownLog) pipeLog(LAST_STAGE,LAST_JOB); },0);
+  return c;
+}
+function syncLogToggle(){ const t=$('#pllog-toggle'); if(t) t.textContent=LOGOPEN?'hide log ▴':'show log ▾'; }
+function setNode(key,state,note){
+  const n=NODES[key]; if(!n)return;
+  n.className='pnode '+state;
+  const dot=n.querySelector('.pdot span'); if(dot) dot.textContent=state==='running'?'':(STATE_ICON[state]||'');
+  if(note!=null){ const nn=n.querySelector('.pnote'); if(nn) nn.textContent=note; }
+}
+function pipeLog(key,job){
+  LAST_STAGE=key; LAST_JOB=job; LAST_SLUG=CUR&&CUR.slug;
+  const lg=$('#pipelog'); if(!lg)return; lg.classList.add('show');
+  const label=(PIPELINE.find(s=>s.key===key)||{}).label||key;
+  const running=job.status==='queued'||job.status==='running';
+  const ic=$('#pllog-ic'), st=$('#pllog-st'), body=$('#pllog-body');
+  if(ic) ic.innerHTML = running?'<span class="spin-mini"></span>':(job.status==='error'?'⚠':'✓');
+  if(st){ st.textContent=label+' — '+job.status; st.style.color=job.status==='error'?'var(--rose)':''; }
+  if(body){ body.textContent=(job.log||'').slice(-4000); body.scrollTop=body.scrollHeight; }
+}
+// run ONE stage; stream into the inline log; refresh the view after.
+async function runStage(key,opts={}){
+  if(RUNNING){ toastMsg('A stage is already running…'); return; }
+  if(!CUR) return; const slug=CUR.slug;
+  RUNNING=true; setNode(key,'running');
+  const con=$('.console'); if(con) con.classList.add('busy');
+  const lg=$('#pipelog'); if(lg){ lg.classList.add('show'); lg.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  let ok=true;
+  try{
+    const job=await api.post(`/api/projects/${slug}/steps/${key}`,opts);
+    await pollJob(job,j=>{ if(CUR&&CUR.slug===slug) pipeLog(key,j); });
+  }catch(e){ ok=false; if(CUR&&CUR.slug===slug){ setNode(key,'error'); pipeLog(key,{status:'error',error:e.message,log:e.message}); } }
+  RUNNING=false;
+  await refreshProjects();
+  if(CUR&&CUR.slug===slug){ await openProject(slug); }   // re-render with fresh status
+  return ok;
+}
+// run a chain of stages from `fromKey` to the end (skips humanize/parse unless intended).
+async function produce(fromKey,{force=false}={}){
+  if(RUNNING){ toastMsg('A stage is already running…'); return; }
+  if(!CUR) return; const slug=CUR.slug;
+  let keys=PIPELINE.map(s=>s.key); keys=keys.slice(keys.indexOf(fromKey));
+  const hasScenes=(CUR.scenes||[]).length>0;
+  keys=keys.filter(k=>{
+    if(k==='humanize'&&fromKey!=='humanize') return false;
+    if(k==='parse'&&fromKey!=='parse'&&hasScenes) return false;   // never silently re-parse over edited scenes
+    return true;
+  });
+  RUNNING=true;
+  const con=$('.console'); if(con) con.classList.add('busy');
+  const lg=$('#pipelog'); if(lg){ lg.classList.add('show'); lg.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  for(let i=0;i<keys.length;i++){
+    const k=keys[i], opts=(force&&i===0)?{force:true}:{};
+    if(!(CUR&&CUR.slug===slug)) break;   // user navigated away — stop touching this view
+    setNode(k,'running');
+    try{
+      const job=await api.post(`/api/projects/${slug}/steps/${k}`,opts);
+      await pollJob(job,j=>{ if(CUR&&CUR.slug===slug) pipeLog(k,j); });
+      if(!(CUR&&CUR.slug===slug)) return;          // navigated away mid-stage — don't stomp the new view
+      setNode(k,'done');
+    }catch(e){
+      if(CUR&&CUR.slug===slug){ setNode(k,'error'); pipeLog(k,{status:'error',error:e.message,log:e.message}); }
+      if(k!=='thumbnail'){ RUNNING=false; await refreshProjects(); if(CUR&&CUR.slug===slug) await openProject(slug); return; }
+    }
+  }
+  RUNNING=false;
+  await refreshProjects();
+  if(CUR&&CUR.slug===slug) await openProject(slug);
+}
+function toastMsg(text){ const t=$('#toast'); t.className='toast show'; t.innerHTML=''; t.append(el('div',{textContent:text}));
+  setTimeout(()=>{t.className='toast';},4000); }
+function toastLink(text,onclick){ const t=$('#toast'); t.className='toast show'; t.innerHTML='';
+  t.append(el('div',{className:'spread'},el('span',{textContent:text}),
+    el('button',{className:'sm primary',textContent:'open',onclick:()=>{t.className='toast';onclick();}})));
+  setTimeout(()=>{t.className='toast';},9000); }
+
+function renderProject(){
+  const p=CUR, m=main(); m.innerHTML='';
+  // header
+  m.append(el('div',{className:'titlebar'},
+    el('div',{},
+      el('h2',{textContent:p.title||p.slug}),
+      el('div',{className:'pill',textContent:`${p.aspect} · ${(p.scenes||[]).length} scenes · ~${p.duration_sec||0}s${p.channel?' · '+p.channel:''}`})),
+    el('div',{className:'row'},
+      el('span',{className:'status-tag '+(p.status||'draft'),textContent:p.status||'draft'}),
+      p.channel?el('button',{className:'sm ghost',textContent:'← '+p.channel,onclick:()=>openChannel(p.channel)}):null,
+      p.video_url?el('a',{href:p.video_url,target:'_blank'},el('button',{className:'sm ghost',textContent:'open mp4'})):null,
+      el('button',{className:'danger sm ghost',textContent:'delete',onclick:()=>delProject()}))));
+
+  // pipeline console (centerpiece)
+  m.append(renderPipeline());
+
+  // output (video + thumbnail picker)
+  if(p.video_url || (p.thumbnail_variants||[]).length || p.thumbnail_url) m.append(renderOutput());
+
+  // producer chat
+  m.append(renderAgentChat());
+
+  // manual controls — collapsed once a video exists
+  const manual=el('details',{className:'block'}); manual.open=(p.scenes||[]).length>0 && !p.video_url;
+  manual.append(el('summary',{textContent:`Manual controls${p.scenes.length?' — script, blueprint & '+p.scenes.length+' scenes':' — blueprint'}`}));
+  const body=el('div',{className:'body'}); manual.append(body);
+  renderBlueprint(body);
+  m.append(manual);
+}
+async function delProject(){
+  const p=CUR; if(!confirm('Delete project '+p.slug+'?'))return;
+  const chn=p.channel; await api.del('/api/projects/'+p.slug); CUR=null;
+  await refreshProjects(); refreshChannels();
+  if(chn&&CHANNEL_SLUGS.has(chn)) openChannel(chn); else { history.replaceState(null,'','#'); renderHome(); }
+}
+
+function renderOutput(){
+  const p=CUR, card=el('div',{className:'card'}); card.append(el('h3',{textContent:'Output'}));
+  const r=el('div',{className:'row',style:'align-items:flex-start;gap:22px'});
+  if(p.video_url) r.append(el('video',{src:p.video_url,controls:true}));
+  else r.append(el('div',{className:'empty',textContent:'No video rendered yet — press ▶ Produce video.'}));
+  card.append(r);
+  // thumbnails
+  const variants=p.thumbnail_variants||[];
+  card.append(el('div',{className:'spread',style:'margin:18px 0 10px'},
+    el('h3',{style:'margin:0',textContent:'Thumbnails'+(variants.length?' — pick one':'')}),
+    el('div',{className:'row'},
+      el('button',{className:'sm ghost',textContent:variants.length?'↻ regenerate':'✦ generate',title:'design fresh variants',
+        onclick:()=>runStage('thumbnail',{force:variants.length>0})}))));
+  if(variants.length){
+    const grid=el('div',{className:'thumbgrid'});
+    variants.forEach((v,i)=>{
+      const cell=el('div',{className:'thumbv'+(v.selected?' sel':''),title:'click to use this thumbnail',
+        onclick:()=>selectThumb(v.path)});
+      cell.append(el('img',{src:v.url}),
+        el('div',{className:'badge',textContent:v.selected?'✓ selected':'#'+(i+1)}));
+      grid.append(cell);
+    });
+    card.append(grid);
+  } else if(p.thumbnail_url){
+    card.append(el('img',{src:p.thumbnail_url,style:'max-width:280px;border-radius:11px;border:1px solid var(--line)'}));
+  } else {
+    card.append(el('div',{className:'empty',textContent:'No thumbnails yet.'}));
+  }
+  return card;
+}
+async function selectThumb(path){
+  const slug=CUR.slug;
+  try{ const res=await api.post(`/api/projects/${slug}/select-thumbnail`,{path});
+    if(CUR&&CUR.slug===slug){ CUR=res; renderProject(); } await refreshProjects(); }
+  catch(e){ alert(e.message); }
+}
+
+// ---------- blueprint / script / scenes (manual fallback) ----------
+function renderBlueprint(body){
+  const p=CUR;
+  body.append(el('h3',{style:'margin-top:8px',textContent:'Blueprint'}));
+  const fields=[['title','Title'],['voice','Voice'],['music','Music bed'],['style','Visual style'],['theme','Theme']];
+  const grid=el('div',{className:'grid2'});
+  fields.forEach(([k,lbl])=>{ const i=el('input',{value:p[k]||'',onblur:()=>patchProj({[k]:i.value})}); grid.append(wrap(lbl,i)); });
+  body.append(grid);
+  const notes=el('textarea',{rows:2,value:p.blueprint_notes||'',onblur:()=>patchProj({blueprint_notes:notes.value})});
+  body.append(el('label',{textContent:'Showrunner notes'}),notes);
+  const script=el('textarea',{rows:5,value:p.script_human||p.script_raw||'',
+    onblur:()=>patchProj({[p.script_human?'script_human':'script_raw']:script.value})});
+  body.append(el('label',{textContent:'Script ('+(p.script_human?'humanized':'raw')+') — edit, then re-run Scenes'}),script);
+
+  body.append(el('h3',{style:'margin-top:20px',textContent:'Scenes — '+(p.scenes.length?visualMix():'none yet')}));
+  p.scenes.forEach((s,i)=>body.append(renderScene(s,i)));
+  body.append(el('button',{className:'sm ghost',textContent:'＋ add scene',onclick:async()=>{
+    const slug=p.slug; await api.post(`/api/projects/${slug}/scenes`,{after:p.scenes.length?p.scenes[p.scenes.length-1].id:null,text:'New narration.'});
+    if(CUR&&CUR.slug===slug) openProject(slug);}}));
+}
+function visualMix(){const mix={};CUR.scenes.forEach(s=>mix[s.visual_type]=(mix[s.visual_type]||0)+1);
+  return Object.entries(mix).map(([k,v])=>`${v} ${k}`).join(' · ');}
+function renderScene(s,i){
+  const p=CUR;
+  const img=s.image_url?el('img',{src:s.image_url}):el('div',{className:'noimg',textContent:'no image yet'});
+  const vsel=el('select',{onchange:()=>patchScene(s.id,{visual_type:vsel.value})});
+  CFG.visual_types.forEach(v=>vsel.append(el('option',{value:v,textContent:v,selected:v===s.visual_type})));
+  const text=el('textarea',{rows:2,value:s.text,onblur:()=>patchScene(s.id,{text:text.value})});
+  const prompt=el('textarea',{rows:2,value:s.image_prompt,onblur:()=>patchScene(s.id,{image_prompt:prompt.value})});
+  const deliv=el('input',{value:s.delivery||'',placeholder:'delivery (emotion/pace)',onblur:()=>patchScene(s.id,{delivery:deliv.value})});
+  const vosel=el('select',{onchange:()=>patchScene(s.id,{voice:vosel.value})});
+  vosel.append(el('option',{value:'',textContent:'(project voice)',selected:!s.voice}));
+  (CFG.voices||[]).forEach(v=>vosel.append(el('option',{value:v.id,textContent:v.label+(v.gender?' · '+v.gender:''),selected:v.id===s.voice})));
+  const left=el('div',{className:'vis'},img,
+    el('div',{className:'row',style:'margin-top:6px'},el('span',{className:'vtag '+s.visual_type,textContent:s.visual_type}),
+      s.image_source?el('span',{className:'pill',textContent:s.image_source}):null),
+    s.audio_url?el('audio',{src:s.audio_url,controls:true}):null);
+  const right=el('div',{},
+    el('div',{className:'spread'},el('b',{textContent:'Scene '+s.id}),
+      el('div',{className:'row'},
+        el('button',{className:'xs ghost',textContent:'↑',onclick:()=>move(i,-1)}),
+        el('button',{className:'xs ghost',textContent:'↓',onclick:()=>move(i,1)}),
+        el('button',{className:'danger xs ghost',textContent:'✕',onclick:async()=>{const slug=p.slug;await api.del(`/api/projects/${slug}/scenes/${s.id}`);if(CUR&&CUR.slug===slug)openProject(slug);}}))),
+    el('label',{textContent:'narration'}),text,
+    el('div',{className:'grid2'},wrap('visual_type',vsel),wrap('voice',vosel)),
+    el('label',{textContent:'delivery'}),deliv,
+    el('label',{textContent:'image prompt'}),prompt,
+    s.notes?el('div',{className:'pill',style:'margin-top:6px',textContent:'note: '+s.notes}):null,
+    el('div',{className:'scene-actions'},
+      el('button',{className:'go sm',textContent:'make visual',onclick:()=>runStage('visuals',{only:[s.id]})}),
+      el('button',{className:'sm ghost',textContent:'regen visual',onclick:()=>runStage('visuals',{only:[s.id],force:true})}),
+      el('button',{className:'sm ghost',textContent:'re-voice',onclick:()=>runStage('tts',{only:[s.id],force:true})})));
+  return el('div',{className:'scene'},left,right);
+}
+// race-safe: capture slug, only touch CUR if still here after the await.
+async function move(i,dir){
+  const slug=CUR.slug, order=CUR.scenes.map(s=>s.id), j=i+dir;
+  if(j<0||j>=order.length)return; [order[i],order[j]]=[order[j],order[i]];
+  const res=await api.post(`/api/projects/${slug}/scenes/reorder`,{order});
+  if(CUR&&CUR.slug===slug){ CUR=res; renderProject(); }
+}
+async function patchProj(b){ const slug=CUR.slug; const res=await api.patch('/api/projects/'+slug,b); if(CUR&&CUR.slug===slug) CUR=res; }
+async function patchScene(id,b){ const slug=CUR.slug; const res=await api.patch(`/api/projects/${slug}/scenes/${id}`,b);
+  if(CUR&&CUR.slug===slug){ CUR=res; if('visual_type' in b) renderProject(); } }
+
+// ---------- producer chat ----------
+const PCHAT={};
+function agentSuggestions(){
+  const p=CUR, hasScript=!!(p.script_raw||p.script_human), hasScenes=p.scenes.length>0, hasVideo=!!p.video_url;
+  if(!hasScript) return ['Write a 30-second script'+(p.channel?' for this channel':' about a topic'),'Brainstorm 3 video ideas','Make the whole video about discipline'];
+  if(!hasScenes) return ['Split the script into scenes','Make the hook punchier','Rewrite it tighter'];
+  if(!hasVideo) return ['Render the whole video','Make scene 1 a chart','Use the female voice for any quote'];
+  return ['Make scene 2 AI-generated','Re-voice scene 1','Rebuild the video'];
+}
+function renderAgentChat(){
+  const slug=CUR.slug; if(!PCHAT[slug]) PCHAT[slug]=[];
+  const card=el('div',{className:'card',style:'border-color:rgba(139,123,255,.45)'});
+  card.append(el('h3',{textContent:'Producer chat — tell me what to make'}));
+  card.append(el('div',{className:'chat',id:'agentlog',style:'max-height:40vh'}));
+  const input=el('textarea',{rows:1,id:'agentinput',placeholder:'Tell the producer what to do…  (Enter to send · Shift+Enter = new line)',
+    onkeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}}});
+  const btn=el('button',{className:'primary',textContent:'Send'}); const go=()=>sendAgentMsg(input.value.trim(),input,btn); btn.onclick=go;
+  card.append(el('div',{className:'chatbox'},input,btn));
+  const sg=el('div',{className:'suggs',id:'agentsuggs'});
+  agentSuggestions().forEach(t=>sg.append(el('div',{className:'sugg',textContent:t,onclick:()=>{input.value=t;go();}})));
+  card.append(sg);
+  setTimeout(renderAgentLog,0);
+  return card;
+}
+function renderAgentLog(){
+  const log=$('#agentlog'); if(!log||!CUR)return; log.innerHTML='';
+  const msgs=PCHAT[CUR.slug]||[];
+  if(!msgs.length){
+    log.append(el('div',{className:'msg bot',textContent:
+      (CUR.channel?'Hey — I\'m your producer for this video, on '+CUR.channel+'\'s style. ':'Hey — I\'m your producer. ')+
+      'Tell me what to make and I\'ll write the script, shot-list it, pick visuals, voice it and render. Try a suggestion below 👇'}));
+    return;
+  }
+  msgs.forEach(mm=>{
+    log.append(el('div',{className:'msg '+(mm.role==='user'?'user':'bot'),textContent:mm.content}));
+    if(mm.actions&&mm.actions.length) log.append(el('div',{className:'pill',style:'align-self:flex-start;color:var(--teal)',textContent:'✓ '+mm.actions.join(' · ')}));
+  });
+  log.scrollTop=log.scrollHeight;
+}
+async function sendAgentMsg(text,input,btn){
+  if(!text||!CUR)return; const slug=CUR.slug;
+  if(input){input.value='';input.disabled=true;} if(btn)btn.disabled=true;
+  const sg=$('#agentsuggs'); if(sg) sg.remove();
+  PCHAT[slug].push({role:'user',content:text}); renderAgentLog();
+  const lg=$('#agentlog'); if(lg){const d=el('div',{className:'msg bot'});d.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';lg.append(d);lg.scrollTop=lg.scrollHeight;}
+  try{
+    const job=await api.post(`/api/projects/${slug}/agent`,{messages:PCHAT[slug].map(x=>({role:x.role,content:x.content}))});
+    const done=await runJob(job,'producer'); const res=done.result||{};
+    PCHAT[slug].push({role:'assistant',content:res.reply||'(done)',actions:res.actions||[]});
+  }catch(e){ PCHAT[slug].push({role:'assistant',content:'⚠ '+e.message}); }
+  if(CUR&&CUR.slug===slug){ await openProject(slug); const ai=$('#agentinput'); if(ai) ai.focus(); }   // refresh state; PCHAT persists the reply
+}
+
+// ============================ channels ============================
 const STAGES=[['draft','Draft'],['ready','Ready'],['published','Published']];
 function videoBoard(projects){
   const board=el('div',{className:'board'});
@@ -353,7 +724,7 @@ function videoBoard(projects){
   return board;
 }
 function videoCard(p){
-  const card=el('div',{className:'vcard',onclick:e=>{ if(e.target.tagName!=='SELECT') openProject(p.slug); }});
+  const card=el('div',{className:'vcard',onclick:e=>{if(e.target.tagName!=='SELECT')openProject(p.slug);}});
   if(p.thumbnail_url) card.append(el('img',{className:'vthumb',src:p.thumbnail_url}));
   else card.append(el('div',{className:'vthumb noimg2',textContent:p.steps.montage?'▶':'✎'}));
   card.append(el('div',{className:'vt',textContent:p.title||p.slug}));
@@ -364,299 +735,125 @@ function videoCard(p){
   card.append(sel);
   return card;
 }
-function openUnfiled(){
-  CUR=null; CURCH={slug:'__unfiled__',name:'Unfiled',aspect:'16:9'};
-  history.replaceState(null,'','#c/__unfiled__'); selSidebar('__unfiled__');
-  const m=$('#main'); m.innerHTML='';
-  m.append(el('h2',{textContent:'Unfiled videos'}),
-    el('div',{className:'pill',textContent:'Videos not assigned to a channel (made via Quick create). Open one to work on it.'}));
-  const proj=PROJECTS.filter(p=>!effChannel(p));
-  m.append(proj.length?videoBoard(proj):el('p',{className:'muted',style:'margin-top:20px',textContent:'None — create channel videos, or use ⚡ Quick create in the sidebar.'}));
-}
-
-const STEP_DEFS = [
-  ['humanize','Humanize'],['parse','Parse'],['visuals','Visuals'],
-  ['tts','Voice'],['montage','Montage'],['audiomix','Audio'],['thumbnail','Thumb'],
-];
-function stepState(s){
-  const st = CUR.steps;
-  if(s==='humanize') return st.humanize?'done':'';
-  if(s==='parse') return st.parse.done?`${st.parse.scenes} scenes`:'';
-  if(s==='visuals') return st.images.done?'done':(st.images.have?`${st.images.have}/${st.images.total}`:'');
-  if(s==='tts') return st.tts.done?'done':(st.tts.have?`${st.tts.have}/${st.tts.total}`:'silent');
-  if(s==='montage') return st.montage?'done':'';
-  if(s==='audiomix') return st.montage?'sfx + music':'needs montage';
-  if(s==='thumbnail') return st.thumbnail?'done':'';
-}
-
-function renderProject(){
-  const p = CUR, m = $('#main'); m.innerHTML='';
-  const isDone = s => ['humanize','parse','visuals','tts','montage','thumbnail'].includes(s) &&
-    (stepState(s)==='done' || (s==='parse'&&p.steps.parse.done) || (s==='montage'&&p.steps.montage) ||
-     (s==='thumbnail'&&p.steps.thumbnail) || (s==='humanize'&&p.steps.humanize));
-
-  // header
-  m.append(el('div',{className:'row',style:'justify-content:space-between'},
-    el('h2',{textContent:p.title||p.slug}),
-    el('div',{className:'row'},
-      p.channel?el('button',{className:'sm',textContent:'← '+p.channel,title:'back to channel',onclick:()=>openChannel(p.channel)}):'',
-      p.video_url?el('a',{href:p.video_url,target:'_blank'},el('button',{className:'sm',textContent:'open mp4'})):'',
-      el('button',{className:'danger sm',textContent:'delete',onclick:async()=>{
-        if(confirm('Delete project '+p.slug+'?')){const chn=p.channel;await api.del('/api/projects/'+p.slug);CUR=null;await refreshProjects();refreshChannels();if(chn){openChannel(chn);}else{history.replaceState(null,'','#');m.innerHTML='<p class="muted" style="margin-top:8vh;text-align:center">Project deleted.</p>';}}}}))));
-  m.append(el('div',{className:'pill',textContent:`${p.aspect} · ${p.scenes.length} scenes · ~${p.duration_sec}s${p.channel?' · '+p.channel:''}`}));
-
-  const jobbar = el('div',{id:'jobbar'}); m.append(jobbar);
-
-  // producer-agent chat (primary) — drive everything by talking
-  m.append(renderAgentChat());
-
-  // output preview (visible once rendered)
-  if(p.video_url||p.thumbnail_url){
-    const out=el('div',{className:'card'}); out.append(el('h3',{textContent:'Output'}));
-    const r=el('div',{className:'row',style:'align-items:flex-start'});
-    if(p.video_url) r.append(el('video',{src:p.video_url,controls:true}));
-    if(p.thumbnail_url) r.append(el('div',{},el('label',{textContent:'thumbnail'}),el('img',{src:p.thumbnail_url,style:'max-width:260px;border-radius:10px;display:block;border:1px solid var(--line)'})));
-    out.append(r); m.append(out);
-  }
-
-  // manual controls — collapsed once a video exists, open while building
-  const manual=el('details',{}); manual.open = p.scenes.length>0 && !p.video_url;
-  manual.append(el('summary',{textContent:`Manual controls${p.scenes.length?' — '+p.scenes.length+' scenes, script & steps':' — steps'}`}));
-  const body=el('div',{className:'body'}); manual.append(body);
-
-  const steps = el('div',{className:'steps'});
-  STEP_DEFS.forEach(([s,label])=>{
-    const stt = stepState(s);
-    steps.append(el('div',{className:'step'+(isDone(s)?' done':'')},
-      el('div',{className:'nm',textContent:label}),
-      el('div',{className:'st',textContent:stt||'—'}),
-      el('div',{className:'row'},
-        el('button',{className:'sm',textContent:'run',onclick:()=>step(s)}),
-        el('button',{className:'sm',textContent:'↻',title:'force',onclick:()=>step(s,{force:true})}))));
-  });
-  body.append(el('h3',{style:'margin-top:4px',textContent:'Pipeline'}), steps,
-    el('div',{className:'row',style:'margin:12px 0 4px'},
-      el('button',{className:'go',textContent:'▶ Run all',onclick:runAll}),
-      p.video_url?el('button',{className:'sm',textContent:'rebuild video',onclick:()=>step('montage',{force:true})}):'' ));
-
-  body.append(el('h3',{style:'margin-top:18px',textContent:'Blueprint'}));
-  const fields=[['title','Title'],['voice','Voice'],['music','Music bed'],['style','Visual style'],['theme','Theme']];
-  const grid=el('div',{className:'grid2'});
-  fields.forEach(([k,lbl])=>{ const i=el('input',{value:p[k]||'',onblur:()=>patchProj({[k]:i.value})}); grid.append(wrap(lbl,i)); });
-  body.append(grid);
-  const notes=el('textarea',{rows:2,value:p.blueprint_notes||'',onblur:()=>patchProj({blueprint_notes:notes.value})});
-  body.append(el('label',{textContent:'Showrunner notes'}),notes);
-  const script=el('textarea',{rows:4,value:p.script_human||p.script_raw||'',
-    onblur:()=>patchProj({[p.script_human?'script_human':'script_raw']:script.value})});
-  body.append(el('label',{textContent:'Script ('+(p.script_human?'humanized':'raw')+') — edit then re-split'}),script);
-
-  body.append(el('h3',{style:'margin-top:18px',textContent:'Scenes — '+(p.scenes.length?visualMix():'none yet')}));
-  p.scenes.forEach((s,i)=>body.append(renderScene(s,i)));
-  body.append(el('button',{className:'sm',textContent:'+ add scene',onclick:async()=>{
-    await api.post(`/api/projects/${p.slug}/scenes`,{after:p.scenes.length?p.scenes[p.scenes.length-1].id:null,text:'New narration.'});openProject(p.slug);}}));
-  m.append(manual);
-}
-function visualMix(){const mix={};CUR.scenes.forEach(s=>mix[s.visual_type]=(mix[s.visual_type]||0)+1);
-  return Object.entries(mix).map(([k,v])=>`${v} ${k}`).join(' · ');}
-
-function renderScene(s,i){
-  const p=CUR;
-  const img = s.image_url
-    ? el('img',{src:s.image_url})
-    : el('div',{className:'noimg',textContent:'no image yet'});
-  const vsel = el('select',{onchange:()=>patchScene(s.id,{visual_type:vsel.value})});
-  CFG.visual_types.forEach(v=>vsel.append(el('option',{value:v,textContent:v,selected:v===s.visual_type})));
-  const text = el('textarea',{rows:2,value:s.text,onblur:()=>patchScene(s.id,{text:text.value})});
-  const prompt = el('textarea',{rows:2,value:s.image_prompt,onblur:()=>patchScene(s.id,{image_prompt:prompt.value})});
-  const deliv = el('input',{value:s.delivery||'',placeholder:'delivery (emotion/pace)',onblur:()=>patchScene(s.id,{delivery:deliv.value})});
-  const vosel = el('select',{onchange:()=>patchScene(s.id,{voice:vosel.value})});
-  vosel.append(el('option',{value:'',textContent:'(project voice)',selected:!s.voice}));
-  (CFG.voices||[]).forEach(v=>vosel.append(el('option',{value:v.id,textContent:v.label+(v.gender?' · '+v.gender:''),selected:v.id===s.voice})));
-
-  const left = el('div',{className:'vis'}, img,
-    el('div',{className:'row',style:'margin-top:6px'}, el('span',{className:'vtag '+s.visual_type,textContent:s.visual_type}),
-      s.image_source?el('span',{className:'pill',textContent:s.image_source}):''),
-    s.audio_url?el('audio',{src:s.audio_url,controls:true}):'' );
-
-  const right = el('div',{},
-    el('div',{className:'row',style:'justify-content:space-between'},
-      el('b',{textContent:'Scene '+s.id}),
-      el('div',{className:'row'},
-        el('button',{className:'sm',textContent:'↑',onclick:()=>move(i,-1)}),
-        el('button',{className:'sm',textContent:'↓',onclick:()=>move(i,1)}),
-        el('button',{className:'danger sm',textContent:'✕',onclick:async()=>{await api.del(`/api/projects/${p.slug}/scenes/${s.id}`);openProject(p.slug);}}))),
-    el('label',{textContent:'narration'}),text,
-    el('div',{className:'grid2'}, wrap('visual_type',vsel), wrap('voice',vosel)),
-    el('label',{textContent:'delivery'}),deliv,
-    el('label',{textContent:'image prompt'}),prompt,
-    s.notes?el('div',{className:'pill',style:'margin-top:6px',textContent:'note: '+s.notes}):'',
-    el('div',{className:'scene-actions'},
-      el('button',{className:'go sm',textContent:'make visual',onclick:()=>step('visuals',{only:[s.id]})}),
-      el('button',{className:'sm',textContent:'regen visual',onclick:()=>step('visuals',{only:[s.id],force:true})}),
-      el('button',{className:'sm',textContent:'re-voice',onclick:()=>step('tts',{only:[s.id],force:true})})));
-  return el('div',{className:'scene'}, left, right);
-}
-
-// All of these capture the slug up-front and only touch the CUR global / re-render
-// if the user is STILL on that project after the await (they may have navigated away).
-async function move(i,dir){
-  const slug=CUR.slug, order=CUR.scenes.map(s=>s.id), j=i+dir;
-  if(j<0||j>=order.length) return;
-  [order[i],order[j]]=[order[j],order[i]];
-  const res = await api.post(`/api/projects/${slug}/scenes/reorder`,{order});
-  if(CUR&&CUR.slug===slug){ CUR=res; renderProject(); }
-}
-async function patchProj(b){ const slug=CUR.slug; const res=await api.patch('/api/projects/'+slug,b); if(CUR&&CUR.slug===slug) CUR=res; }
-async function patchScene(id,b){ const slug=CUR.slug; const res=await api.patch(`/api/projects/${slug}/scenes/${id}`,b);
-  if(CUR&&CUR.slug===slug){ CUR=res; if('visual_type' in b) renderProject(); } }
-
-async function step(s,opts={}){ const slug=CUR.slug; const job = await api.post(`/api/projects/${slug}/steps/${s}`,opts);
-  try{ await runJob(job); }catch(e){} if(CUR&&CUR.slug===slug) await openProject(slug); await refreshProjects(); }
-
-async function runAll(){
-  const slug=CUR.slug;
-  for(const s of ['visuals','tts','montage','audiomix']){
-    try{ await runJob(await api.post(`/api/projects/${slug}/steps/${s}`,{})); }catch(e){}
-  }
-  if(CUR&&CUR.slug===slug) await openProject(slug); await refreshProjects();
-}
-
-async function createProject(body){
-  try{ const j = await runJob(await api.post('/api/projects',body));
-    const slug = (j.result.slugs||[])[0];
-    await refreshProjects(); await refreshChannels();
-    if(slug) openProject(slug);
-  }catch(e){ alert('Create failed: '+e.message); }
-}
-
-// poll a job to completion, streaming its log into the job bar (or the global
-// status toast when no project is open, e.g. while the director builds a new one)
-async function runJob(job){
-  const gs = $('#gstatus');
-  const draw = j => {
-    const bar = $('#jobbar');
-    const node = bar || gs;
-    if(!node) return;
-    node.style.display='block';
-    node.className = (bar?'jobbar ':'gstatus ')+(j.status==='error'?'err':j.status==='done'?'':'run');
-    node.innerHTML='';
-    node.append(el('div',{className:'row'},el('b',{textContent:`${j.kind}: ${j.status}`}),
-      j.error?el('span',{style:'color:var(--bad)',textContent:j.error}):''));
-    if(j.log) node.append(el('div',{className:'joblog',textContent:j.log.slice(-3000)}));
-  };
-  draw(job);
-  while(job.status==='queued'||job.status==='running'){
-    await new Promise(r=>setTimeout(r,1200));
-    job = await api.get('/api/jobs/'+job.id); draw(job);
-  }
-  if(gs && !$('#jobbar')) setTimeout(()=>{ gs.style.display='none'; }, 4000);
-  if(job.status==='error') throw new Error(job.error||'job failed');
-  return job;
-}
-
-// ---------- producer-agent chat (drive a video by talking) ----------
-const PCHAT={};
-function agentSuggestions(){
-  const p=CUR, hasScript=!!(p.script_raw||p.script_human), hasScenes=p.scenes.length>0, hasVideo=!!p.video_url;
-  if(!hasScript) return ['Write a 30-second script'+(p.channel?' for this channel':' about a topic'), 'Brainstorm 3 video ideas', 'Make the whole video about discipline'];
-  if(!hasScenes) return ['Split the script into scenes', 'Make the hook punchier', 'Rewrite it tighter'];
-  if(!hasVideo) return ['Render the whole video', 'Make scene 1 a chart', 'Use the female voice for any quote'];
-  return ['Make scene 2 AI-generated', 'Re-voice scene 1', 'Rebuild the video'];
-}
-function renderAgentChat(){
-  const slug=CUR.slug;
-  if(!PCHAT[slug]) PCHAT[slug]=[];
-  const card=el('div',{className:'card',style:'border-color:rgba(91,157,255,.5)'});
-  card.append(el('h3',{textContent:'▸ Producer chat — tell me what to make'}));
-  card.append(el('div',{className:'chat',id:'agentlog',style:'max-height:40vh'}));
-  const input=el('textarea',{rows:1,placeholder:'Tell the producer what to do…  (Enter to send · Shift+Enter = new line)',
-    onkeydown:e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();} }});
-  const btn=el('button',{className:'primary',textContent:'Send'});
-  const go=()=>sendAgentMsg(input.value.trim(), input, btn);
-  btn.onclick=go;
-  card.append(el('div',{className:'chatbox'},input,btn));
-  const sg=el('div',{className:'suggs',id:'agentsuggs'});
-  agentSuggestions().forEach(t=>sg.append(el('div',{className:'sugg',textContent:t,onclick:()=>{input.value=t;go();}})));
-  card.append(sg);
-  setTimeout(renderAgentLog,0);
-  return card;
-}
-function renderAgentLog(){
-  const log=$('#agentlog'); if(!log||!CUR) return; log.innerHTML='';
-  const msgs=PCHAT[CUR.slug]||[];
-  if(!msgs.length){
-    log.append(el('div',{className:'msg strategist',textContent:
-      (CUR.channel?'Hey — I\'m your producer for this video, on '+CUR.channel+'\'s style. ':'Hey — I\'m your producer. ')+
-      'Tell me what to make and I\'ll write the script, shot-list it, pick visuals, voice it and render. Try a suggestion below 👇'}));
-    log.scrollTop=log.scrollHeight; return;
-  }
-  msgs.forEach(mm=>{
-    log.append(el('div',{className:'msg '+(mm.role==='user'?'creator':'strategist'),textContent:mm.content}));
-    if(mm.actions&&mm.actions.length) log.append(el('div',{className:'pill',style:'align-self:flex-start;color:var(--accent2)',textContent:'✓ '+mm.actions.join(' · ')}));
-  });
-  log.scrollTop=log.scrollHeight;
-}
-async function sendAgentMsg(text, input, btn){
-  if(!text||!CUR) return; const slug=CUR.slug;
-  if(input){ input.value=''; input.disabled=true; } if(btn) btn.disabled=true;
-  const sg=$('#agentsuggs'); if(sg) sg.remove();
-  PCHAT[slug].push({role:'user',content:text}); renderAgentLog();
-  const lg=$('#agentlog'); if(lg){ const d=el('div',{className:'msg strategist'}); d.innerHTML='<span class="typing"><i></i><i></i><i></i></span>'; lg.append(d); lg.scrollTop=lg.scrollHeight; }
-  try{
-    const job=await api.post(`/api/projects/${slug}/agent`,{messages:PCHAT[slug].map(x=>({role:x.role,content:x.content}))});
-    const done=await runJob(job);
-    const res=done.result||{};
-    PCHAT[slug].push({role:'assistant',content:res.reply||'(done)',actions:res.actions||[]});
-  }catch(e){
-    PCHAT[slug].push({role:'assistant',content:'⚠ '+e.message});
-  }
-  if(CUR&&CUR.slug===slug) await openProject(slug);  // only refresh if still here (PCHAT keeps the reply otherwise)
-}
-
-// ---------- channels + director chat ----------
-let CURCH=null; const CHAT={};
-
 async function refreshChannels(sel){
-  const {channels} = await api.get('/api/channels');
+  const {channels}=await api.get('/api/channels');
   CHANNEL_SLUGS=new Set(channels.map(c=>c.slug));
   const ul=$('#channels'); ul.innerHTML='';
   channels.forEach(ch=>{
     const li=el('li',{className:(CURCH&&CURCH.slug===ch.slug?'sel':''),onclick:()=>openChannel(ch.slug)},
-      el('div',{className:'pt',textContent:'▸ '+(ch.name||ch.slug)}),
+      el('div',{className:'pt'},el('span',{className:'chav'}),el('span',{textContent:ch.name||ch.slug})),
       el('div',{className:'pm',textContent:`${ch.niche} · ${ch.n_projects} video${ch.n_projects===1?'':'s'}`}));
     li.dataset.slug=ch.slug; ul.append(li);
   });
   const unfiled=PROJECTS.filter(p=>!effChannel(p)).length;
   if(unfiled){
     const li=el('li',{className:(CURCH&&CURCH.slug==='__unfiled__'?'sel':''),onclick:()=>openUnfiled()},
-      el('div',{className:'pt',textContent:'📂 Unfiled'}),
+      el('div',{className:'pt'},el('span',{textContent:'📂'}),el('span',{textContent:'Unfiled'})),
       el('div',{className:'pm',textContent:`${unfiled} video${unfiled>1?'s':''}`}));
     li.dataset.slug='__unfiled__'; ul.append(li);
   }
   if(sel) openChannel(sel);
 }
-
+function openUnfiled(){
+  ++NAV_SEQ;   // invalidate any in-flight project/channel open
+  CUR=null; CURCH={slug:'__unfiled__',name:'Unfiled',aspect:'16:9'};
+  history.replaceState(null,'','#c/__unfiled__'); selSidebar('__unfiled__');
+  const m=main(); m.innerHTML='';
+  m.append(el('h2',{textContent:'Unfiled videos'}),
+    el('div',{className:'pill',textContent:'Videos not assigned to a channel (made via Quick create). Open one to work on it.'}));
+  const proj=PROJECTS.filter(p=>!effChannel(p));
+  m.append(proj.length?videoBoard(proj):el('p',{className:'muted',style:'margin-top:22px',textContent:'None — create channel videos, or use ⚡ Quick create in the sidebar.'}));
+}
 async function openChannel(slug){
-  if(slug==='__unfiled__'){ openUnfiled(); return; }
-  CURCH=await api.get('/api/channels/'+slug); CUR=null;
-  history.replaceState(null,'','#c/'+slug);
-  selSidebar(slug);
+  if(slug==='__unfiled__'){openUnfiled();return;}
+  const my=++NAV_SEQ; let data;
+  try{ data=await api.get('/api/channels/'+slug); }
+  catch(e){ if(my===NAV_SEQ) main().innerHTML='<p style="color:var(--rose)">'+esc(e.message)+'</p>'; return; }
+  if(my!==NAV_SEQ) return;
+  CURCH=data; CUR=null; history.replaceState(null,'','#c/'+slug); selSidebar(slug);
   if(!CHAT[slug]) CHAT[slug]=[];
   renderChannel();
 }
-
 async function patchChannel(b){ const slug=CURCH.slug; const r=await api.patch('/api/channels/'+slug,b); if(CURCH&&CURCH.slug===slug) CURCH=r; }
 
-const CHEDIT={};
-function chEditSuggestions(){
-  return ['Make the tone more intense','Add a rule: no clickbait','Rewrite the intro to be punchier',
-    'Target an older audience','Give it a memorable catchphrase','Switch to 9:16 shorts'];
+function renderChannel(){
+  const ch=CURCH, m=main(); m.innerHTML='';
+  const proj=PROJECTS.filter(p=>effChannel(p)===ch.slug);
+  m.append(el('div',{className:'titlebar'},
+    el('div',{},el('h2',{textContent:ch.name||ch.slug}),
+      el('div',{className:'pill',textContent:`${ch.niche} · ${proj.length} video${proj.length===1?'':'s'} · ${ch.aspect}`})),
+    el('div',{className:'row'},
+      el('button',{className:'go sm',textContent:'＋ New video',onclick:()=>createProject({mode:'blank',channel:ch.slug})}),
+      el('button',{className:'danger sm ghost',textContent:'delete',onclick:async()=>{
+        if(confirm('Delete channel '+ch.slug+'? (its videos become Unfiled)')){await api.del('/api/channels/'+ch.slug);CURCH=null;history.replaceState(null,'','#');await refreshProjects();refreshChannels();renderHome();}}}))));
+  m.append(videoBoard(proj));
+
+  const settings=el('details',{className:'block'});
+  settings.append(el('summary',{textContent:'⚙ Channel settings — edit by chat, profile & brainstorm'}));
+  const sb=el('div',{className:'body'}); settings.append(sb);
+  sb.append(renderChannelEdit());
+
+  sb.append(el('h3',{style:'margin-top:18px',textContent:'Profile (keeps every video on-style)'}));
+  const niche=el('select',{onchange:()=>patchChannel({niche:niche.value})});
+  CFG.niches.forEach(n=>niche.append(el('option',{value:n,textContent:n,selected:n===ch.niche})));
+  const handle=el('input',{value:ch.handle||'',placeholder:'@handle',onblur:()=>patchChannel({handle:handle.value})});
+  const aspect=el('select',{onchange:()=>patchChannel({aspect:aspect.value})});
+  ['16:9','9:16'].forEach(a=>aspect.append(el('option',{value:a,textContent:a,selected:a===ch.aspect})));
+  sb.append(el('div',{className:'grid2'},wrap('niche',niche),wrap('handle',handle)),wrap('default format',aspect));
+  const tf=(k,lbl,rows=2)=>{const t=el('textarea',{rows,value:ch[k]||'',onblur:()=>patchChannel({[k]:t.value})});return el('div',{},el('label',{textContent:lbl}),t);};
+  sb.append(tf('description','Description'),tf('rules',"Content rules (do / don't)"),
+    el('div',{className:'grid2'},tf('audience','Audience',1),tf('voice','Voice character',1)),
+    tf('visual_notes','Visual style',1),
+    tf('thumbnail_style','Thumbnail style / clickbait level',1));
+  sb.append(el('h3',{style:'margin-top:20px',textContent:'Recurring signature (woven into every script)'}));
+  const sf=(k,lbl)=>{const i=el('input',{value:ch[k]||'',onblur:()=>patchChannel({[k]:i.value})});return wrap(lbl,i);};
+  sb.append(el('div',{className:'grid2'},sf('intro','Greeting / intro'),sf('outro','Sign-off / outro')),
+    el('div',{className:'grid2'},sf('cta','Like / subscribe CTA'),sf('catchphrase','Catchphrase')));
+  sb.append(el('div',{className:'row',style:'margin-top:13px'},el('button',{className:'sm ghost',id:'draftbtn',textContent:'✦ Re-draft empty fields with AI',onclick:draftChannel})));
+
+  const chat=el('div',{className:'card',style:'margin-top:18px'}); chat.append(el('h3',{textContent:'Brainstorm videos — analyze + send a topic to production'}));
+  chat.append(el('div',{className:'chat',id:'chatlog'}));
+  const input=el('textarea',{placeholder:'Ask the strategist… (e.g. "what angles haven\'t we covered on focus?")',
+    onkeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}});
+  const send=async()=>{ const txt=input.value.trim(); if(!txt)return; const slug=ch.slug; input.value='';
+    CHAT[slug].push({role:'user',content:txt}); renderChat();
+    const sb2=el('div',{className:'msg bot',textContent:'…thinking'}); $('#chatlog')&&$('#chatlog').append(sb2);
+    try{ const r=await api.post('/api/channels/'+slug+'/chat',{messages:CHAT[slug].map(x=>({role:x.role,content:x.content}))});
+      CHAT[slug].push({role:'assistant',content:r.reply,brief:r.brief}); if(CURCH&&CURCH.slug===slug) renderChat();
+    }catch(e){ CHAT[slug].push({role:'assistant',content:'error: '+e.message}); if(CURCH&&CURCH.slug===slug) renderChat(); } };
+  chat.append(el('div',{className:'chatbox'},input,el('button',{className:'primary',textContent:'Send',onclick:send})));
+  chat.append(el('div',{className:'pill',style:'margin-top:5px',textContent:'Enter to send · when you settle on a topic, a “Send to production” button appears'}));
+  sb.append(chat);
+  m.append(settings);
+  renderChat();
 }
+const CHAT={};
+function renderChat(){
+  const ch=CURCH, log=$('#chatlog'); if(!log||!ch)return; log.innerHTML='';
+  (CHAT[ch.slug]||[]).forEach(mm=>{
+    log.append(el('div',{className:'msg '+(mm.role==='user'?'user':'bot'),textContent:mm.content}));
+    if(mm.brief) log.append(el('div',{className:'briefcard'},
+      el('div',{className:'muted',textContent:'Production brief'}),el('b',{textContent:mm.brief}),
+      el('div',{style:'margin-top:9px'},el('button',{className:'go sm',textContent:'▶ Send to production',onclick:()=>sendToProduction(mm.brief)}))));
+  });
+  log.scrollTop=log.scrollHeight;
+}
+async function sendToProduction(brief){ await createProject({mode:'director',channel:CURCH.slug,topic:brief,aspect:CURCH.aspect,niche:CURCH.niche}); }
+async function draftChannel(){
+  const slug=CURCH.slug; const btn=$('#draftbtn'); if(btn){btn.disabled=true;btn.textContent='✦ drafting…';}
+  try{ await runJob(await api.post('/api/channels/'+slug+'/draft',{}),'draft channel'); if(CURCH&&CURCH.slug===slug) await openChannel(slug); }
+  catch(e){ alert('Draft failed: '+e.message); if(btn){btn.disabled=false;btn.textContent='✦ Re-draft empty fields with AI';} }
+}
+
+// channel edit chat
+const CHEDIT={};
+function chEditSuggestions(){ return ['Make the tone more intense','Add a rule: no clickbait','Rewrite the intro to be punchier',
+  'Target an older audience','Give it a memorable catchphrase','Switch to 9:16 shorts','Punchier thumbnails with big arrows']; }
 function renderChannelEdit(){
   const ch=CURCH; if(!CHEDIT[ch.slug]) CHEDIT[ch.slug]=[];
-  const card=el('div',{className:'card',style:'border-color:rgba(91,157,255,.5)'});
-  card.append(el('h3',{textContent:'▸ Edit this channel — tell me what to change'}));
-  card.append(el('div',{className:'chat',id:'chedlog',style:'max-height:34vh'}));
+  const card=el('div',{className:'card',style:'border-color:rgba(139,123,255,.45)'});
+  card.append(el('h3',{textContent:'Edit this channel — tell me what to change'}));
+  card.append(el('div',{className:'chat',id:'chedlog',style:'max-height:32vh'}));
   const input=el('textarea',{rows:1,placeholder:'e.g. "make the rules stricter" · "rewrite the sign-off" · "more cinematic visuals"  (Enter to send)',
     onkeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}}});
   const btn=el('button',{className:'primary',textContent:'Send'}); const go=()=>sendChEdit(input.value.trim(),input,btn); btn.onclick=go;
@@ -667,162 +864,185 @@ function renderChannelEdit(){
   return card;
 }
 function renderChEdLog(){
-  const log=$('#chedlog'); if(!log||!CURCH) return; log.innerHTML='';
+  const log=$('#chedlog'); if(!log||!CURCH)return; log.innerHTML='';
   const msgs=CHEDIT[CURCH.slug]||[];
-  if(!msgs.length){ log.append(el('div',{className:'msg strategist',textContent:'Tell me how to tweak the channel — tone, rules, the recurring intro / sign-off / CTA, voice, visuals, even the name. I\'ll update the profile and it stays applied to every new video. Try a suggestion 👇'})); return; }
-  msgs.forEach(mm=>{ log.append(el('div',{className:'msg '+(mm.role==='user'?'creator':'strategist'),textContent:mm.content}));
-    if(mm.changed) log.append(el('div',{className:'pill',style:'align-self:flex-start;color:var(--accent2)',textContent:'✓ profile updated'})); });
+  if(!msgs.length){ log.append(el('div',{className:'msg bot',textContent:'Tell me how to tweak the channel — tone, rules, the recurring intro / sign-off / CTA, voice, visuals, thumbnails, even the name. I\'ll update the profile and it stays applied to every new video. Try a suggestion 👇'})); return; }
+  msgs.forEach(mm=>{ log.append(el('div',{className:'msg '+(mm.role==='user'?'user':'bot'),textContent:mm.content}));
+    if(mm.changed) log.append(el('div',{className:'pill',style:'align-self:flex-start;color:var(--teal)',textContent:'✓ profile updated'})); });
   log.scrollTop=log.scrollHeight;
 }
 async function sendChEdit(text,input,btn){
-  if(!text||!CURCH) return; const slug=CURCH.slug;
-  if(input){input.value='';input.disabled=true;} if(btn) btn.disabled=true;
+  if(!text||!CURCH)return; const slug=CURCH.slug;
+  if(input){input.value='';input.disabled=true;} if(btn)btn.disabled=true;
   const sg=$('#chedsuggs'); if(sg) sg.remove();
   CHEDIT[slug].push({role:'user',content:text}); renderChEdLog();
-  const lg=$('#chedlog'); if(lg){const d=el('div',{className:'msg strategist'});d.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';lg.append(d);lg.scrollTop=lg.scrollHeight;}
+  const lg=$('#chedlog'); if(lg){const d=el('div',{className:'msg bot'});d.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';lg.append(d);lg.scrollTop=lg.scrollHeight;}
   let updated=null;
   try{ const r=await api.post('/api/channels/'+slug+'/edit',{messages:CHEDIT[slug].map(x=>({role:x.role,content:x.content}))});
     CHEDIT[slug].push({role:'assistant',content:r.reply||'Updated.',changed:true}); updated=r.channel;
   }catch(e){ CHEDIT[slug].push({role:'assistant',content:'⚠ '+e.message}); }
-  if(!CURCH||CURCH.slug!==slug) return;   // user navigated away mid-edit — don't stomp the view
+  if(!CURCH||CURCH.slug!==slug) return;
   if(updated) CURCH=updated;
-  renderChannel();   // refresh so the manual fields below reflect the AI's edits
-}
-
-function renderChannel(){
-  const ch=CURCH, m=$('#main'); m.innerHTML='';
-  const proj=PROJECTS.filter(p=>effChannel(p)===ch.slug);
-  m.append(el('div',{className:'row',style:'justify-content:space-between'},
-    el('h2',{textContent:'▸ '+(ch.name||ch.slug)}),
-    el('div',{className:'row'},
-      el('button',{className:'go sm',textContent:'＋ New video',onclick:()=>createProject({mode:'blank',channel:ch.slug})}),
-      el('button',{className:'danger sm',textContent:'delete',onclick:async()=>{
-        if(confirm('Delete channel '+ch.slug+'? (its videos become Unfiled)')){await api.del('/api/channels/'+ch.slug);CURCH=null;history.replaceState(null,'','#');m.innerHTML='';await refreshProjects();refreshChannels();}}}))));
-  m.append(el('div',{className:'pill',textContent:`${ch.niche} · ${proj.length} video${proj.length===1?'':'s'} · ${ch.aspect}`}));
-
-  // video board (primary) — grouped by stage
-  m.append(videoBoard(proj));
-
-  // channel settings (collapsed): edit chat + profile + brainstorm
-  const settings=el('details',{}); settings.append(el('summary',{textContent:'⚙ Channel settings — edit by chat, profile & brainstorm'}));
-  const sb=el('div',{className:'body'}); settings.append(sb);
-  sb.append(renderChannelEdit());
-
-  sb.append(el('h3',{style:'margin-top:16px',textContent:'Profile (keeps every video on-style)'}));
-  const niche=el('select',{onchange:()=>patchChannel({niche:niche.value})});
-  CFG.niches.forEach(n=>niche.append(el('option',{value:n,textContent:n,selected:n===ch.niche})));
-  const handle=el('input',{value:ch.handle||'',placeholder:'@handle',onblur:()=>patchChannel({handle:handle.value})});
-  const aspect=el('select',{onchange:()=>patchChannel({aspect:aspect.value})});
-  ['16:9','9:16'].forEach(a=>aspect.append(el('option',{value:a,textContent:a,selected:a===ch.aspect})));
-  sb.append(el('div',{className:'grid2'},wrap('niche',niche),wrap('handle',handle)),wrap('default format',aspect));
-  const tf=(k,lbl,rows=2)=>{const t=el('textarea',{rows,value:ch[k]||'',onblur:()=>patchChannel({[k]:t.value})});return el('div',{},el('label',{textContent:lbl}),t);};
-  sb.append(tf('description','Description'),tf('rules',"Content rules (do / don't)"),
-    el('div',{className:'grid2'},tf('audience','Audience',1),tf('voice','Voice character',1)),tf('visual_notes','Visual style',1));
-  sb.append(el('h3',{style:'margin-top:18px',textContent:'Recurring signature (woven into every script)'}));
-  const sf=(k,lbl)=>{const i=el('input',{value:ch[k]||'',onblur:()=>patchChannel({[k]:i.value})});return wrap(lbl,i);};
-  sb.append(el('div',{className:'grid2'},sf('intro','Greeting / intro'),sf('outro','Sign-off / outro')),
-    el('div',{className:'grid2'},sf('cta','Like / subscribe CTA'),sf('catchphrase','Catchphrase')));
-  sb.append(el('div',{className:'row',style:'margin-top:12px'},el('button',{className:'sm',id:'draftbtn',textContent:'✦ Re-draft empty fields with AI',onclick:draftChannel})));
-
-  const chat=el('div',{className:'card',style:'margin-top:16px'}); chat.append(el('h3',{textContent:'Brainstorm videos — analyze + send a topic to production'}));
-  chat.append(el('div',{className:'chat',id:'chatlog'}));
-  const input=el('textarea',{placeholder:'Ask the strategist… (e.g. "what angles haven\'t we covered on focus?")',
-    onkeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}});
-  const send=async()=>{ const txt=input.value.trim(); if(!txt) return; input.value='';
-    CHAT[ch.slug].push({role:'user',content:txt}); renderChat();
-    const sb2=el('div',{className:'msg strategist',textContent:'…thinking'}); $('#chatlog').append(sb2);
-    try{ const r=await api.post('/api/channels/'+ch.slug+'/chat',{messages:CHAT[ch.slug].map(x=>({role:x.role,content:x.content}))});
-      CHAT[ch.slug].push({role:'assistant',content:r.reply,brief:r.brief}); renderChat();
-    }catch(e){ sb2.textContent='error: '+e.message; sb2.style.color='var(--bad)'; } };
-  chat.append(el('div',{className:'chatbox'},input,el('button',{className:'primary',textContent:'Send',onclick:send})));
-  chat.append(el('div',{className:'pill',style:'margin-top:4px',textContent:'Enter to send · when you settle on a topic, a “Send to production” button appears'}));
-  sb.append(chat);
-  m.append(settings);
-  renderChat();
-}
-
-function renderChat(){
-  const ch=CURCH, log=$('#chatlog'); if(!log) return; log.innerHTML='';
-  (CHAT[ch.slug]||[]).forEach(mm=>{
-    log.append(el('div',{className:'msg '+(mm.role==='user'?'creator':'strategist'),textContent:mm.content}));
-    if(mm.brief) log.append(el('div',{className:'briefcard'},
-      el('div',{className:'muted',textContent:'Production brief'}),el('b',{textContent:mm.brief}),
-      el('div',{style:'margin-top:8px'},el('button',{className:'go sm',textContent:'▶ Send to production',
-        onclick:()=>sendToProduction(mm.brief)}))));
-  });
-  log.scrollTop=log.scrollHeight;
-}
-
-async function sendToProduction(brief){
-  await createProject({mode:'director', channel:CURCH.slug, topic:brief, aspect:CURCH.aspect, niche:CURCH.niche});
-}
-
-async function draftChannel(){
-  const slug=CURCH.slug; const btn=$('#draftbtn'); if(btn){btn.disabled=true; btn.textContent='✦ drafting…';}
-  try{ await runJob(await api.post('/api/channels/'+slug+'/draft',{})); if(CURCH&&CURCH.slug===slug) await openChannel(slug); }
-  catch(e){ alert('Draft failed: '+e.message); if(btn){btn.disabled=false; btn.textContent='✦ Re-draft empty fields with AI';} }
+  renderChannel();
 }
 
 // ---------- chat-first channel creation ----------
-let SETUP_MSGS=[], SETUP_DRAFT={};
+let SETUP_MSGS=[], SETUP_DRAFT={}, setupBusy=false, SETUP_SEQ=0;
 function openNewChannelChat(seedName){
-  CUR=null; CURCH=null; SETUP_MSGS=[]; SETUP_DRAFT = seedName ? {name:seedName} : {};
-  [...$('#channels').children].forEach(li=>li.classList.remove('sel'));
-  [...$('#projects').children].forEach(li=>li.classList.remove('sel'));
-  renderChannelSetup();
+  ++NAV_SEQ; SETUP_SEQ++; setupBusy=false;
+  CUR=null;CURCH=null;SETUP_MSGS=[];SETUP_DRAFT=seedName?{name:seedName}:{};
+  selSidebar(null); renderChannelSetup();
   if(seedName) sendSetup('I want to create a channel called "'+seedName+'". Help me set it up.');
 }
 function renderChannelSetup(){
-  const m=$('#main'); m.innerHTML='';
+  const m=main(); m.innerHTML='';
   m.append(el('h2',{textContent:'New channel'}),
-    el('div',{className:'pill',textContent:"Chat about the channel — the assistant fills the profile + the recurring intro / sign-off / CTA. Edit anything on the right, then create."}));
-  const grid=el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px'});
+    el('div',{className:'pill',textContent:'Chat about the channel — the assistant fills the profile + the recurring intro / sign-off / CTA. Edit anything on the right, then create.'}));
+  const grid=el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px'});
   const chat=el('div',{className:'card'}); chat.append(el('h3',{textContent:'Setup chat'}));
-  chat.append(el('div',{className:'chat',id:'setuplog',style:'max-height:50vh'}));
+  chat.append(el('div',{className:'chat',id:'setuplog',style:'max-height:52vh'}));
   const input=el('textarea',{placeholder:"Describe your channel… niche, vibe, who it's for",onkeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();s();}}});
-  const s=()=>{const t=input.value.trim(); if(t){input.value='';sendSetup(t);}};
+  const s=()=>{const t=input.value.trim();if(t){input.value='';sendSetup(t);}};
   chat.append(el('div',{className:'chatbox'},input,el('button',{className:'primary',textContent:'Send',onclick:s})));
   const prof=el('div',{className:'card',id:'setupdraft'});
   grid.append(chat,prof); m.append(grid);
   renderSetupLog(); renderSetupDraft();
 }
 function renderSetupLog(){ const log=$('#setuplog'); if(!log)return; log.innerHTML='';
-  SETUP_MSGS.forEach(mm=>log.append(el('div',{className:'msg '+(mm.role==='user'?'creator':'strategist'),textContent:mm.content})));
+  SETUP_MSGS.forEach(mm=>log.append(el('div',{className:'msg '+(mm.role==='user'?'user':'bot'),textContent:mm.content})));
   log.scrollTop=log.scrollHeight; }
 function renderSetupDraft(){
   const c=$('#setupdraft'); if(!c)return; c.innerHTML='';
   c.append(el('h3',{textContent:'Profile draft (editable)'}));
-  const f=(k,lbl,long)=>{ const node = long?el('textarea',{rows:2,value:SETUP_DRAFT[k]||''}):el('input',{value:SETUP_DRAFT[k]||''});
-    node.onblur=()=>{SETUP_DRAFT[k]=node.value;}; return el('div',{},el('label',{textContent:lbl}),node); };
+  const f=(k,lbl,long)=>{const node=long?el('textarea',{rows:2,value:SETUP_DRAFT[k]||''}):el('input',{value:SETUP_DRAFT[k]||''});
+    node.onblur=()=>{SETUP_DRAFT[k]=node.value;};return el('div',{},el('label',{textContent:lbl}),node);};
   const niche=el('select',{onchange:()=>{SETUP_DRAFT.niche=niche.value;}});
   CFG.niches.forEach(n=>niche.append(el('option',{value:n,textContent:n,selected:n===SETUP_DRAFT.niche})));
   c.append(el('div',{className:'grid2'},f('name','Name'),el('div',{},el('label',{textContent:'niche'}),niche)),
-    f('description','Description',1), f('rules','Rules (do / don\'t)',1),
+    f('description','Description',1),f('rules','Rules (do / don\'t)',1),
     el('div',{className:'grid2'},f('voice','Voice character'),f('visual_notes','Visual style')),
+    f('thumbnail_style','Thumbnail style',1),
     el('div',{className:'grid2'},f('intro','Greeting / intro'),f('outro','Sign-off / outro')),
     el('div',{className:'grid2'},f('cta','Like / subscribe CTA'),f('catchphrase','Catchphrase')));
-  const ready=!!(SETUP_DRAFT.name && SETUP_DRAFT.niche);
-  c.append(el('button',{className:'go',style:'margin-top:12px;width:100%',disabled:!ready,
-    textContent: ready?'Create channel ▸':'Create channel (needs a name + niche)',onclick:createChannelFromDraft}));
+  const ready=!!(SETUP_DRAFT.name&&SETUP_DRAFT.niche);
+  c.append(el('button',{className:'go',style:'margin-top:14px;width:100%',disabled:!ready,
+    textContent:ready?'Create channel ▸':'Create channel (needs a name + niche)',onclick:createChannelFromDraft}));
 }
-let setupBusy=false;
 async function sendSetup(text){
-  if(setupBusy) return; setupBusy=true;
+  if(setupBusy)return; setupBusy=true; const my=SETUP_SEQ;
   SETUP_MSGS.push({role:'user',content:text}); renderSetupLog();
-  const lg=$('#setuplog'); if(lg){const d=el('div',{className:'msg strategist'});d.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';lg.append(d);}
-  try{ const r=await api.post('/api/channel-agent',{messages:SETUP_MSGS.map(x=>({role:x.role,content:x.content})),draft:SETUP_DRAFT});
-    SETUP_DRAFT=r.profile||SETUP_DRAFT; SETUP_MSGS.push({role:'assistant',content:r.reply||'…'});
-  }catch(e){ SETUP_MSGS.push({role:'assistant',content:'error: '+e.message}); }
+  const lg=$('#setuplog'); if(lg){const d=el('div',{className:'msg bot'});d.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';lg.append(d);}
+  let r=null,err=null;
+  try{ r=await api.post('/api/channel-agent',{messages:SETUP_MSGS.map(x=>({role:x.role,content:x.content})),draft:SETUP_DRAFT}); }
+  catch(e){ err=e; }
+  if(my!==SETUP_SEQ) return;   // a new setup session started mid-await — drop this stale result
   setupBusy=false;
+  if(err) SETUP_MSGS.push({role:'assistant',content:'error: '+err.message});
+  else { SETUP_DRAFT=r.profile||SETUP_DRAFT; SETUP_MSGS.push({role:'assistant',content:r.reply||'…'}); }
   renderSetupLog(); renderSetupDraft();
 }
 async function createChannelFromDraft(){
-  if(!SETUP_DRAFT.name){ alert('Give the channel a name first.'); return; }
-  try{ const ch=await api.post('/api/channels', SETUP_DRAFT); await refreshChannels(ch.slug); }
+  if(!SETUP_DRAFT.name){alert('Give the channel a name first.');return;}
+  try{ const ch=await api.post('/api/channels',SETUP_DRAFT); await refreshChannels(ch.slug); }
   catch(e){ alert('Create failed: '+e.message); }
 }
 
-boot().catch(e=>{ $('#main').innerHTML='<p style="color:var(--bad)">Failed to load: '+esc(e.message)+'</p>'; });
+// ============================ quick create ============================
+function renderNewBody(){
+  const b=$('#newbody'); b.innerHTML='';
+  const niche=el('select',{}); CFG.niches.forEach(n=>niche.append(el('option',{value:n,textContent:n})));
+  const aspect=el('select',{}); ['16:9','9:16'].forEach(a=>aspect.append(el('option',{value:a,textContent:a})));
+  const secs=el('input',{type:'number',value:60,min:15});
+  if(NEWMODE==='director'||NEWMODE==='topic'){
+    const inp=el('input',{placeholder:NEWMODE==='director'?'theme or topic (the agent team builds it)':'topic'});
+    b.append(el('label',{textContent:NEWMODE==='director'?'Director — topic / theme':'Quick — topic'}),inp,
+      el('label',{textContent:'niche'}),niche,el('div',{className:'grid2'},wrap('seconds',secs),wrap('aspect',aspect)),
+      el('button',{className:'primary',style:'margin-top:11px;width:100%',
+        textContent:NEWMODE==='director'?'Run director ▸':'Generate ▸',
+        onclick:()=>createProject({mode:NEWMODE,topic:inp.value,niche:niche.value,seconds:+secs.value,aspect:aspect.value})}));
+  } else if(NEWMODE==='batch'){
+    const inp=el('input',{placeholder:'theme / niche'}); const n=el('input',{type:'number',value:3,min:1,max:8});
+    b.append(el('label',{textContent:'Batch — theme'}),inp,el('div',{className:'grid2'},wrap('count',n),wrap('aspect',aspect)),
+      el('label',{textContent:'niche'}),niche,
+      el('button',{className:'primary',style:'margin-top:11px;width:100%',textContent:'Brainstorm + build N ▸',
+        onclick:()=>createProject({mode:'batch',theme:inp.value,n:+n.value,niche:niche.value,aspect:aspect.value})}));
+  } else if(NEWMODE==='ideas'){
+    const inp=el('input',{placeholder:'theme to brainstorm'}); const n=el('input',{type:'number',value:5,min:2,max:10});
+    const out=el('div',{style:'margin-top:11px;display:flex;flex-direction:column;gap:8px'});
+    b.append(el('label',{textContent:'Brainstorm storylines'}),inp,el('div',{className:'grid2'},wrap('count',n),wrap('niche',niche)),
+      el('button',{className:'primary',style:'margin-top:11px;width:100%',textContent:'Brainstorm ▸',
+        onclick:async()=>{ out.innerHTML='<span class="muted">thinking…</span>';
+          try{ const j=await runJob(await api.post('/api/ideas',{theme:inp.value,n:+n.value,niche:niche.value}),'brainstorm');
+            out.replaceChildren(...(j.result.ideas||[]).map(id=>renderIdea(id,aspect.value,niche.value)));
+          }catch(e){ out.innerHTML='<span style="color:var(--rose)">'+esc(e.message)+'</span>'; } }}),out);
+  }
+}
+function renderIdea(idea,aspect,niche){
+  return el('div',{className:'card',style:'padding:12px;margin:0'},
+    el('b',{textContent:idea.title}),
+    idea.hook?el('div',{className:'pill',style:'margin-top:3px',textContent:'“'+idea.hook+'”'}):null,
+    idea.angle?el('div',{className:'pill',style:'margin-top:2px',textContent:idea.angle}):null,
+    el('button',{className:'go sm',style:'margin-top:9px',textContent:'Build this ▸',onclick:()=>createProject({mode:'idea',idea,niche,aspect})}));
+}
+async function createProject(body){
+  const fromHash=location.hash;   // where the user was when they kicked this off
+  try{ const j=await runJob(await api.post('/api/projects',body),body.mode==='director'?'director':(body.mode==='batch'?'batch':'create'));
+    const slugs=j.result.slugs||[], slug=slugs[0];
+    await refreshProjects(); await refreshChannels();
+    if(!slug){ toastMsg('Nothing was created.'); return; }
+    if(location.hash===fromHash){ openProject(slug); }          // still where they started → open it
+    else { refreshBoardView(); toastLink((slugs.length>1?slugs.length+' videos ready':'Video ready')+': '+slug, ()=>openProject(slug)); }
+  }catch(e){ alert('Create failed: '+e.message); }
+}
+
+// ============================ settings ============================
+const AGENT_LABELS={screenwriter:'Screenwriter',humanizer:'Humanizer',art_director:'Art Director',
+  voice_director:'Voice Director',sound_designer:'Sound Designer',showrunner:'Showrunner',
+  producer:'Producer (workspace chat)',strategist:'Strategist (channel chats)'};
+async function openSettings(){
+  const my=++NAV_SEQ;
+  CUR=null;CURCH=null; selSidebar('__settings__'); history.replaceState(null,'','#settings');
+  const m=main(); m.innerHTML='<p class="muted">Loading…</p>';
+  let st,us; try{ [st,us]=await Promise.all([api.get('/api/settings'),api.get('/api/usage')]); }
+  catch(e){ if(my===NAV_SEQ) m.innerHTML='<p style="color:var(--rose)">'+esc(e.message)+'</p>'; return; }
+  if(my!==NAV_SEQ) return;   // user navigated away from Settings during load
+  m.innerHTML=''; m.append(el('h2',{textContent:'Settings'}));
+  const card=el('div',{className:'card'}); card.append(el('h3',{textContent:'Agent models — choose the LLM each agent uses'}));
+  const grid=el('div',{className:'grid2'});
+  st.agent_keys.forEach(k=>{
+    const sel=el('select',{onchange:async()=>{ try{ await api.send('PUT','/api/settings',{agents:{[k]:sel.value}}); }catch(e){ alert(e.message); } }});
+    st.models.forEach(mo=>sel.append(el('option',{value:mo.id,textContent:mo.label,selected:(st.agents[k]||'')===mo.id})));
+    grid.append(wrap(AGENT_LABELS[k]||k,sel));
+  });
+  card.append(grid);
+  card.append(el('div',{className:'pill',style:'margin-top:11px',textContent:'“Default (auto)” = your configured default. Provider is inferred from the model (claude→Anthropic, gpt→OpenAI, else local Ollama). You can change a model mid-flight here.'}));
+  m.append(card); m.append(renderUsage(us));
+}
+function statBox(label,val){ return el('div',{style:'min-width:120px'},el('div',{className:'pill',textContent:label}),
+  el('div',{style:'font-size:20px;font-weight:740;margin-top:3px',textContent:String(val)})); }
+function renderUsage(us){
+  const card=el('div',{className:'card'});
+  card.append(el('div',{className:'spread'},el('h3',{style:'margin:0',textContent:'Token usage & balance'}),
+    el('button',{className:'sm ghost',textContent:'↻ refresh',onclick:async()=>{ try{ card.replaceWith(renderUsage(await api.get('/api/usage'))); }catch(e){} }})));
+  const bal=us.balances||{}, t=us.totals||{};
+  card.append(el('div',{className:'row',style:'gap:24px;margin:14px 0;flex-wrap:wrap'},
+    statBox('ai33 credits', bal.ai33_credits!=null?Number(bal.ai33_credits).toLocaleString():'—'),
+    statBox('Est. spend','$'+(t.cost||0).toFixed(4)),
+    statBox('Requests',t.calls||0),
+    statBox('Tokens in / out',(t.in||0).toLocaleString()+' / '+(t.out||0).toLocaleString())));
+  const recent=us.recent||[];
+  card.append(el('div',{className:'pill',style:'margin-bottom:5px',textContent:'Recent requests'}));
+  if(!recent.length) card.append(el('div',{className:'empty',textContent:'No LLM calls yet this session.'}));
+  recent.slice(0,25).forEach(r=>card.append(el('div',{style:'display:flex;gap:14px;font-size:12px;padding:6px 0;border-bottom:1px solid var(--line);color:var(--muted)'},
+    el('span',{style:'flex:0 0 110px;color:var(--primary)',textContent:r.kind}),
+    el('span',{style:'flex:1',textContent:r.model}),
+    el('span',{style:'flex:0 0 110px;text-align:right',textContent:r.in+' → '+r.out}),
+    el('span',{style:'flex:0 0 80px;text-align:right',textContent:'$'+(r.cost||0).toFixed(5)}))));
+  card.append(el('div',{className:'pill',style:'margin-top:11px;color:var(--faint)',textContent:'Anthropic & OpenAI don’t expose account balance via API — “Est. spend” is from token counts × list price (a guide, not a bill). ai33 balance is live.'}));
+  return card;
+}
+
+boot().catch(e=>{ main().innerHTML='<p style="color:var(--rose)">Failed to load: '+esc(e.message)+'</p>'; });
 </script>
 </body>
 </html>

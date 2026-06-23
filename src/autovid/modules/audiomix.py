@@ -31,6 +31,31 @@ from .montage import _require_ffmpeg, _scene_duration, ffmpeg_bin
 
 WORK_SUBDIR = "_audiomix"
 _AUDIO_EXTS = (".mp3", ".wav", ".m4a", ".ogg", ".flac", ".aac")
+# Sentinel marking that audiomix has run against the CURRENT video; its content is
+# the video's mtime, so a later montage rebuild (new mtime) invalidates the mark.
+AUDIOMIX_MARKER = "_audiomixed"
+
+
+def _mark_mixed(project: Project) -> None:
+    try:
+        v = project.dir / project.video_path
+        (project.dir / AUDIOMIX_MARKER).write_text(str(int(v.stat().st_mtime)), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def audiomix_done(project: Project) -> bool:
+    """True if audiomix has run against the current (unchanged-since) video."""
+    if not project.video_path:
+        return False
+    v = project.dir / project.video_path
+    mk = project.dir / AUDIOMIX_MARKER
+    if not (v.exists() and mk.exists()):
+        return False
+    try:
+        return mk.read_text(encoding="utf-8").strip() == str(int(v.stat().st_mtime))
+    except Exception:  # noqa: BLE001
+        return False
 
 
 # --- SFX palette (procedural, via ffmpeg lavfi) ------------------------------
@@ -163,6 +188,7 @@ def mix_project(project: Project, cfg: dict, force: bool = False) -> str | None:
     want_music = do_music and (music_src is not None or mcfg.get("music_synth", True))
     if not events and not want_music:
         print("[audiomix] nothing to mix (no sfx cues, no music)", file=sys.stderr)
+        _mark_mixed(project)
         return project.video_path
 
     work = project.dir / WORK_SUBDIR
@@ -206,6 +232,7 @@ def mix_project(project: Project, cfg: dict, force: bool = False) -> str | None:
     if len(labels) == 1:
         print("[audiomix] nothing synthesized — leaving video as-is", file=sys.stderr)
         shutil.rmtree(work, ignore_errors=True)
+        _mark_mixed(project)
         return project.video_path
 
     parts.append("".join(labels) + f"amix=inputs={len(labels)}:normalize=0:duration=first[aout]")
@@ -219,6 +246,7 @@ def mix_project(project: Project, cfg: dict, force: bool = False) -> str | None:
 
     os.replace(out, video)
     shutil.rmtree(work, ignore_errors=True)
+    _mark_mixed(project)
     print(f"[audiomix] mixed {len(sfx_files)} sfx"
           f"{' + music bed' if bed is not None else ''} -> {project.video_path}", file=sys.stderr)
     return project.video_path

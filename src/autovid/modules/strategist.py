@@ -32,6 +32,7 @@ audience. Output ONLY JSON:
  "audience": "<who it's for, one line>",
  "voice": "<the narrator voice character, one line>",
  "visual_notes": "<the look/feel: palette, imagery style, one line>",
+ "thumbnail_style": "<thumbnail vibe / clickbait level, e.g. 'high-energy clickbait, big arrows & faces' or 'clean & minimal, one bold word'>",
  "intro": "<a recurring greeting / cold-open line for every video>",
  "outro": "<a recurring sign-off line>",
  "cta": "<a natural, on-brand like/subscribe call to action>",
@@ -46,7 +47,7 @@ def draft_profile(name: str, niche: str, notes: str, cfg: dict, llm: LLM | None 
     if not isinstance(data, dict):
         raise ValueError("profile draft was not a JSON object")
     keys = ("description", "rules", "audience", "voice", "visual_notes",
-            "intro", "outro", "cta", "catchphrase")
+            "thumbnail_style", "intro", "outro", "cta", "catchphrase")
     return {k: (data.get(k) or "").strip() for k in keys}
 
 
@@ -103,24 +104,25 @@ def extract_brief(text: str) -> str:
 # --- chat-first channel setup ------------------------------------------------
 
 _SETUP_FIELDS = ("name", "handle", "niche", "description", "rules", "audience", "voice",
-                 "visual_notes", "aspect", "intro", "outro", "cta", "catchphrase")
+                 "visual_notes", "thumbnail_style", "aspect", "intro", "outro", "cta", "catchphrase")
 
 _SETUP_SYSTEM = """You help a creator set up a new faceless-YouTube channel by \
 chatting. Ask for what you need (or infer it), and progressively fill the channel \
 PROFILE: name, niche (motivational|educational|storytelling), description, rules \
-(do's/don'ts), audience, voice (narrator character), visual_notes, and the \
-recurring engagement signature — intro (greeting), outro (sign-off), cta \
-(like/subscribe), catchphrase.
+(do's/don'ts), audience, voice (narrator character), visual_notes, \
+thumbnail_style (thumbnail vibe / clickbait level), and the recurring engagement \
+signature — intro (greeting), outro (sign-off), cta (like/subscribe), catchphrase.
 
 Each turn: reply briefly, and return your CURRENT best profile. PROACTIVELY \
-PROPOSE concrete values for EVERY field — including a channel name and the \
-signature lines — rather than leaving them blank; the creator will edit what they \
-don't like. Keep prior values unless you're improving them. Ask at most one quick \
-question; prefer proposing over interrogating. Set ready=true once name + niche + \
-description + the signature (intro/outro/cta) are filled and the creator seems happy.
+PROPOSE concrete values for EVERY field — including a channel name, a \
+thumbnail_style, and the signature lines — rather than leaving them blank; the \
+creator will edit what they don't like. Keep prior values unless you're improving \
+them. Ask at most one quick question; prefer proposing over interrogating. Set \
+ready=true once name + niche + description + the signature (intro/outro/cta) are \
+filled and the creator seems happy.
 
 Output ONLY JSON (aspect is "16:9" or "9:16"):
-{"reply":"<short reply>","profile":{"name":"","handle":"","niche":"","description":"","rules":"","audience":"","voice":"","visual_notes":"","aspect":"16:9","intro":"","outro":"","cta":"","catchphrase":""},"ready":false}"""
+{"reply":"<short reply>","profile":{"name":"","handle":"","niche":"","description":"","rules":"","audience":"","voice":"","visual_notes":"","thumbnail_style":"","aspect":"16:9","intro":"","outro":"","cta":"","catchphrase":""},"ready":false}"""
 
 
 def channel_setup_turn(draft: dict, messages: list[dict], cfg: dict, llm: LLM | None = None) -> dict:
@@ -148,12 +150,13 @@ def channel_setup_turn(draft: dict, messages: list[dict], cfg: dict, llm: LLM | 
 _EDIT_SYSTEM = """You help a creator EDIT an existing faceless-YouTube channel's \
 profile by chatting. Apply their requested changes to the profile — name, niche \
 (motivational|educational|storytelling), description, rules, audience, voice, \
-visual_notes, handle, the default aspect ("16:9" or "9:16"), and the recurring \
-signature (intro/outro/cta/catchphrase). Reply briefly confirming WHAT you \
-changed (or ask one quick question only if truly ambiguous). Return the FULL \
-updated profile, keeping fields they didn't touch exactly as-is.
+visual_notes, thumbnail_style (thumbnail vibe / clickbait level), handle, the \
+default aspect ("16:9" or "9:16"), and the recurring signature \
+(intro/outro/cta/catchphrase). Reply briefly confirming WHAT you changed (or ask \
+one quick question only if truly ambiguous). Return the FULL updated profile, \
+keeping fields they didn't touch exactly as-is.
 
-Output ONLY JSON: {"reply":"<short reply>","profile":{"name":"","handle":"","niche":"","description":"","rules":"","audience":"","voice":"","visual_notes":"","aspect":"16:9","intro":"","outro":"","cta":"","catchphrase":""}}"""
+Output ONLY JSON: {"reply":"<short reply>","profile":{"name":"","handle":"","niche":"","description":"","rules":"","audience":"","voice":"","visual_notes":"","thumbnail_style":"","aspect":"16:9","intro":"","outro":"","cta":"","catchphrase":""}}"""
 
 
 def channel_edit_turn(draft: dict, messages: list[dict], cfg: dict, llm: LLM | None = None) -> dict:

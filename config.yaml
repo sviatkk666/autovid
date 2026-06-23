@@ -163,3 +163,13 @@ humanizer:
   deterministic_cleanup: true
   # Keep paragraph breaks from the source.
   preserve_paragraphs: true
+
+thumbnail:
+  # The `thumbnail` step designs YouTube thumbnails as self-contained HTML and
+  # screenshots them to PNG with headless Chrome. It produces several distinct
+  # variants so you can pick the best one in the dashboard (Output → thumbnails).
+  count: 3                         # how many variants to generate
+  use_photos: true                 # let photo-concept variants embed a real stock photo
+  # Default clickbait/style level. A channel's own `thumbnail_style` overrides this.
+  style: ""                        # e.g. "high-energy clickbait, big arrows" | "clean & minimal"
+  # chrome_binary: /usr/bin/google-chrome   # auto-detected if on PATH
