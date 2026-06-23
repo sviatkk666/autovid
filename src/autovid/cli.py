@@ -343,6 +343,99 @@ def cmd_push_channel(args: argparse.Namespace) -> int:
     return 0
 
 
+def _probe_duration(project: Project) -> float:
+    """Real mp4 duration via ffprobe; fall back to summed scene estimates."""
+    import shutil
+
+    mp4 = project.dir / project.video_path
+    probe = shutil.which("ffprobe")
+    if probe and mp4.exists():
+        try:
+            out = subprocess.run(
+                [probe, "-v", "error", "-show_entries", "format=duration",
+                 "-of", "default=nokey=1:noprint_wrappers=1", str(mp4)],
+                capture_output=True, text=True,
+            )
+            d = float(out.stdout.strip())
+            if d > 0:
+                return d
+        except (ValueError, OSError):
+            pass
+    return float(sum(s.est_duration_sec for s in project.scenes)) or 0.0
+
+
+def cmd_push(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+
+    try:
+        project = Project.load(args.slug)
+    except FileNotFoundError:
+        print(f"error: no project '{args.slug}' (run the pipeline first).", file=sys.stderr)
+        return 1
+
+    if not project.video_path or not (project.dir / project.video_path).exists():
+        print("error: no rendered video — run `montage` first.", file=sys.stderr)
+        return 1
+
+    channel_slug = args.channel or project.channel
+    if not channel_slug:
+        print("error: project has no channel — pass --channel <slug>.", file=sys.stderr)
+        return 1
+
+    # Ensure the publishing metadata kit exists.
+    if not (project.publish or {}).get("description"):
+        try:
+            from .modules.publish import make_publish_kit
+            profile = ""
+            if project.channel and Channel.exists(project.channel):
+                profile = Channel.load(project.channel).profile_text()
+            project = make_publish_kit(project, cfg, channel_profile=profile)
+        except (RuntimeError, ValueError) as e:
+            print(f"error: publish kit: {e}", file=sys.stderr)
+            return 1
+
+    from .modules.crm_push import ingest_video
+    from .modules.r2_upload import upload_file
+
+    try:
+        mp4 = project.dir / project.video_path
+        mp4_url = upload_file(mp4, f"videos/{project.slug}/{project.slug}.mp4")
+
+        # Selected thumbnail first, then the rest.
+        thumbs: list[str] = []
+        if project.thumbnail_path:
+            thumbs.append(project.thumbnail_path)
+        thumbs += [t for t in project.thumbnails if t not in thumbs]
+        thumb_urls: list[str] = []
+        for i, rel in enumerate(thumbs):
+            p = project.dir / rel
+            if p.exists():
+                thumb_urls.append(upload_file(p, f"videos/{project.slug}/thumb_{i + 1}{p.suffix}"))
+
+        pub = project.publish or {}
+        title = (pub.get("titles") or [project.title or project.slug])[0]
+        payload = {
+            "channelSlug": channel_slug,
+            "title": title,
+            "description": pub.get("description") or "",
+            "tags": pub.get("tags") or [],
+            "chapters": pub.get("chapters") or [],
+            "mp4Url": mp4_url,
+            "thumbnailUrls": thumb_urls,
+            "durationSec": _probe_duration(project),
+            "bytes": mp4.stat().st_size,
+        }
+        if args.scheduled_at:
+            payload["scheduledAt"] = args.scheduled_at
+        ingest_video(payload)
+    except (RuntimeError, FileNotFoundError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+    print(f"[push] pushed video '{project.slug}' to the CRM (channel: {channel_slug})", file=sys.stderr)
+    return 0
+
+
 def _apply_run_overrides(cfg: dict, args: argparse.Namespace) -> None:
     """Apply --tts-provider / --image-provider onto the loaded config in place."""
     if getattr(args, "tts_provider", None):
@@ -723,6 +816,13 @@ def main(argv: list[str] | None = None) -> int:
     pc = sub.add_parser("push-channel", help="upload the channel brand kit (avatar/banner→R2) + register it in the CRM")
     pc.add_argument("slug", help="channel slug (folder under channels/)")
     pc.set_defaults(func=cmd_push_channel)
+
+    pu = sub.add_parser("push", help="upload a finished video (mp4/thumb→R2) + queue it in the CRM (PENDING approval)")
+    pu.add_argument("slug", help="project slug (folder under projects/)")
+    pu.add_argument("--channel", default=None, help="CRM channel slug (default: the project's channel)")
+    pu.add_argument("--scheduled-at", dest="scheduled_at", default=None,
+                    help="desired go-live time, ISO8601 (operator still approves first)")
+    pu.set_defaults(func=cmd_push)
 
     r = sub.add_parser("run", help="all-in-one: [generate ->] humanize -> parse -> tts -> images -> montage")
     r.add_argument("input", nargs="?", default=None, help="input script (.txt/.md); omit if using --topic")
