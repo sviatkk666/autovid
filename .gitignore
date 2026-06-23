@@ -1,0 +1,30 @@
+# Secrets — NEVER commit
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Generated output (audio, images, video, project/channel state)
+projects/
+channels/
+content_memory.json
+usage.json
+settings.json
+*.mp3
+*.wav
+*.mp4
+*.tmp
+
+# Source script bundles (not code)
+YT Scripts*/
+scripts/*/
+
+# OS / editor
+.DS_Store
+*.swp

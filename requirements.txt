@@ -1,0 +1,31 @@
+# Core
+pyyaml>=6.0
+python-dotenv>=1.0
+
+# LLM providers (install what you use)
+anthropic>=0.40
+openai>=1.40
+# Ollama is used via its local HTTP API (no SDK needed) + 'requests'
+requests>=2.31
+
+# TTS stage
+elevenlabs>=1.0          # cloud voices (needs ELEVENLABS_API_KEY)
+# Piper (local) is a standalone binary, not a pip package: https://github.com/rhasspy/piper
+mutagen>=1.47            # read mp3 duration (wav uses the stdlib)
+
+# Images stage (search/download approach uses 'requests', already above)
+# Pexels/Pixabay are optional and key-gated; Openverse/Wikimedia/Archive need no key.
+
+# Images generation (step 4b): OpenAI reuses the 'openai' SDK above; Flux
+# (Replicate), Stability, and local Stable Diffusion WebUI all use 'requests'.
+# REPLICATE_API_TOKEN / STABILITY_API_KEY / SD_WEBUI_URL gate them (all optional).
+
+# Web dashboard (the `serve` command) — FastAPI + uvicorn.
+fastapi>=0.110
+uvicorn>=0.27
+
+# Charts / photo_edit / thumbnails render HTML->PNG with headless Chrome (no pip
+# package — needs a Chrome/Chromium binary on PATH, or set thumbnail.chrome_binary).
+
+# Later stages (montage uses ffmpeg directly, no moviepy needed).
+# pillow>=10.0

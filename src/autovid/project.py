@@ -1,0 +1,106 @@
+"""Central project state, persisted as projects/<slug>/project.json.
+
+Every pipeline stage reads and updates this. A Scene carries everything the
+later stages need: narration text, an image prompt, and produced asset paths.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import asdict, dataclass, field, fields
+from pathlib import Path
+
+from .config import ROOT
+
+PROJECTS_DIR = ROOT / "projects"
+
+
+@dataclass
+class Scene:
+    id: int
+    text: str                      # narration / voiceover for this scene
+    image_prompt: str = ""         # prompt for the image generator
+    est_duration_sec: float = 0.0  # estimated narration length
+    audio_path: str = ""           # filled by the tts stage
+    image_path: str = ""           # filled by the images stage
+    # Provenance for the image (search path) — needed to credit/publish legally.
+    image_source: str = ""         # e.g. "openverse", "pexels"
+    image_license: str = ""        # license short name, e.g. "CC BY 2.0"
+    image_attribution: str = ""    # creator / photographer
+    image_credit_url: str = ""     # page to link back to
+    # --- production blueprint (the director team fills these; the user edits
+    #     them in the dashboard; each module "decodes" its part) ---------------
+    visual_type: str = "search"    # how to make the image: search|generate|chart|animation
+    voice: str = ""                # per-scene voice id/name (else the project voice)
+    delivery: str = ""             # voiceover delivery note: emotion, pace, emphasis
+    sfx: list[dict] = field(default_factory=list)  # [{"cue": str, "at_sec": float}]
+    music: str = ""                # music mood/cue for this beat (else project bed)
+    transition: str = ""           # transition INTO this scene: cut|fade|slide|...
+    animation: str = ""            # motion hint: kenburns-in|kenburns-out|pan-left|...
+    notes: str = ""                # director/showrunner notes for this scene
+
+
+@dataclass
+class Project:
+    slug: str
+    title: str = ""
+    aspect: str = "16:9"           # "16:9" | "9:16"
+    script_raw: str = ""
+    script_human: str = ""
+    scenes: list[Scene] = field(default_factory=list)
+    video_path: str = ""           # filled by the montage stage
+    thumbnail_path: str = ""        # the SELECTED thumbnail (one of thumbnails)
+    thumbnails: list[str] = field(default_factory=list)  # all generated variants
+    # --- production blueprint (project level; set by the director team) -------
+    channel: str = ""              # the Channel slug this video belongs to
+    status: str = "draft"          # workflow stage: draft | ready | published
+    theme: str = ""                # the niche/theme this belongs to (content memory)
+    voice: str = ""                # default voiceover voice for the whole video
+    music: str = ""                # global music-bed mood
+    style: str = ""                # visual style guide applied across scenes
+    blueprint_notes: str = ""      # showrunner's overall production notes
+    source_idea: dict = field(default_factory=dict)  # the Idea this came from
+
+    # --- persistence ---------------------------------------------------------
+    @property
+    def dir(self) -> Path:
+        return PROJECTS_DIR / self.slug
+
+    @property
+    def json_path(self) -> Path:
+        return self.dir / "project.json"
+
+    def save(self) -> Path:
+        self.dir.mkdir(parents=True, exist_ok=True)
+        data = asdict(self)
+        # Atomic write: a concurrent reader (the dashboard) never sees a torn file.
+        tmp = self.json_path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp, self.json_path)
+        return self.json_path
+
+    @classmethod
+    def load(cls, slug: str) -> "Project":
+        path = PROJECTS_DIR / slug / "project.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        # Tolerate older/newer project.json: drop keys the dataclasses don't know.
+        sf = {f.name for f in fields(Scene)}
+        scenes = [Scene(**{k: v for k, v in s.items() if k in sf})
+                  for s in data.pop("scenes", [])]
+        pf = {f.name for f in fields(cls)}
+        return cls(scenes=scenes, **{k: v for k, v in data.items() if k in pf})
+
+    @classmethod
+    def exists(cls, slug: str) -> bool:
+        return (PROJECTS_DIR / slug / "project.json").exists()
+
+    # --- scene editing -------------------------------------------------------
+    # scene.id is a STABLE unique key (it names the asset files, e.g.
+    # audio/scene_03.mp3); list order is the playback order. So reordering and
+    # deleting never renumber — assets stay valid and ids never collide.
+    def scene_by_id(self, sid: int) -> "Scene | None":
+        return next((s for s in self.scenes if s.id == sid), None)
+
+    def next_scene_id(self) -> int:
+        return (max((s.id for s in self.scenes), default=0)) + 1

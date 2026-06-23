@@ -1,0 +1,18 @@
+.git
+.env
+.env.*
+__pycache__
+*.pyc
+.venv
+venv
+projects
+channels
+content_memory.json
+usage.json
+settings.json
+YT Scripts*
+scripts/*/
+*.mp4
+*.wav
+*.mp3
+.DS_Store

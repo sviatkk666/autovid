@@ -1,0 +1,165 @@
+# Global pipeline configuration.
+# Each module reads its section. Switch cloud/local by changing "provider".
+
+llm:
+  # provider: anthropic | openai | ollama
+  # "auto" picks the first one with credentials/availability (cloud key, else
+  # a running Ollama). Force a fully-LOCAL/offline run with provider: ollama
+  # (or per-run: `LLM_PROVIDER=ollama autovid ...`). Needs `ollama serve` running.
+  provider: auto
+  anthropic_model: claude-opus-4-8
+  openai_model: gpt-4o
+  ollama_model: llama3.2:3b   # local, GPU-friendly; `ollama pull llama3.2:3b`
+  temperature: 0.9   # higher => more variation ("burstiness") for humanizing
+
+# Per-agent model overrides (also editable live in the dashboard ⚙ Settings).
+# Empty = use the `llm` default above. The provider is inferred from the model id
+# (claude-* → Anthropic, gpt-* → OpenAI, else → local Ollama).
+models:
+  agents:
+    screenwriter: ""
+    humanizer: ""
+    art_director: ""
+    voice_director: ""
+    sound_designer: ""
+    showrunner: ""
+    producer: ""      # the chat producer-agent
+    strategist: ""    # channel chats / setup / edit
+
+memory:
+  # RAG content memory: past storylines are embedded so the director recalls the
+  # most RELEVANT ones (semantic) when writing a new video, not just recent ones.
+  # embed_provider: auto | openai | ollama | hash
+  #   auto = OpenAI (if OPENAI_API_KEY) → local Ollama (if up) → offline hash fallback.
+  embed_provider: auto
+  openai_embed_model: text-embedding-3-small
+  ollama_embed_model: nomic-embed-text   # needs `ollama pull nomic-embed-text`
+
+scriptgen:
+  # Step 0: invent storylines and write the narration script that the rest of
+  # the pipeline turns into a video. Uses the shared `llm` provider above.
+  # niche: motivational | educational | storytelling  (shapes idea + script voice)
+  niche: motivational
+  # Extra tone notes layered on top of the niche preset (free text, optional).
+  tone: ""
+  # Who you're talking to (optional, sharpens the script).
+  audience: ""
+  # Target spoken length; script word count = target_seconds * parser.words_per_second.
+  # ~60s suits Shorts/Reels; bump to 180-300 for long-form 16:9.
+  target_seconds: 60
+  # Optional closing call-to-action woven in naturally (e.g. "follow for more").
+  cta: ""
+
+director:
+  # The multi-agent "director": a team of role-specialized agents (each its own
+  # prompt + settings) that turn a theme/topic into a full editable production
+  # blueprint. Used by the `direct` command and the dashboard "Director" button.
+  enabled_agents: [screenwriter, humanizer, art_director, voice_director, sound_designer, showrunner]
+  # Hard cap: at most this fraction of scenes may be AI-generated images. The
+  # rest are real stock photos (search), light HTML edits (photo_edit) or charts.
+  max_ai_fraction: 0.2
+  default_voice: ""        # a voice preference the voice director starts from
+  # Per-agent overrides (optional): model + temperature.
+  agents:
+    screenwriter:   {temperature: 0.9}
+    humanizer:      {temperature: 0.9}
+    art_director:   {temperature: 0.6}
+    voice_director: {temperature: 0.5}
+    sound_designer: {temperature: 0.6}
+    showrunner:     {temperature: 0.4}
+
+parser:
+  # mode: auto | llm | deterministic
+  # auto = use the LLM if available, else fall back to deterministic splitting.
+  mode: auto
+  target_scene_seconds: 8        # aim for scenes ~this many seconds of narration
+  words_per_second: 2.5          # ~150 wpm narration, for duration estimates
+  # Appended to every image prompt to keep a consistent visual look.
+  image_style: "cinematic, photorealistic, high detail, dramatic lighting"
+
+tts:
+  # provider: auto | elevenlabs | ai33 | piper
+  # auto = ElevenLabs key → ai33.pro key → local Piper.
+  provider: auto
+  # --- ElevenLabs (cloud) ---
+  elevenlabs_voice_id: 21m00Tcm4TlvDq8ikWAM   # "Rachel" (a default preset voice)
+  elevenlabs_model: eleven_multilingual_v2
+  elevenlabs_format: mp3_44100_128
+  # --- ai33.pro (ElevenLabs-compatible gateway, needs AI33_API_KEY) ---
+  # ai33_base_url: https://api.ai33.pro
+  ai33_voice_id: 21m00Tcm4TlvDq8ikWAM         # falls back to elevenlabs_voice_id
+  ai33_model: eleven_multilingual_v2
+  ai33_format: mp3_44100_128
+  # --- Piper (local, free, offline) ---
+  # Portable: set PIPER_BINARY + PIPER_MODEL in .env (local) or as container env
+  # vars (Railway) instead of hardcoding absolute paths here. Any other *.onnx in
+  # the model's folder is auto-discovered and can be cast per scene (scene.voice).
+  # piper_binary: /abs/path/to/piper      # or set PIPER_BINARY in .env
+  # piper_model: /abs/path/to/voice.onnx  # or set PIPER_MODEL in .env
+  # piper_voices: {ryan: /abs/en_US-ryan-medium.onnx, amy: /abs/en_US-amy-medium.onnx}
+
+images:
+  # Three approaches fill the same per-scene image slot:
+  #   search   (`images` cmd)   — find a ready image online and download it.
+  #   generate (`imagegen` cmd) — synthesize one with an AI model.
+  #   chart    (`chart` cmd)    — LLM writes an HTML/SVG chart/diagram, rendered
+  #                               to PNG with headless Chrome (uses the `llm` +
+  #                               `thumbnail.chrome_binary` settings). Best for
+  #                               data/steps/comparison beats.
+  # --- search ---
+  # provider: auto | openverse | wikimedia | pexels | pixabay | internet_archive
+  # auto = Pexels/Pixabay if a key is set, else Openverse (no key, license-aware).
+  provider: auto
+  # Where to build the search query from: image_prompt | text
+  query_from: image_prompt
+  query_max_words: 8             # keep queries short — search engines prefer keywords
+  # --- generate ---
+  generate:
+    # provider: auto | openai | flux | stability | ai33 | local
+    # auto = OpenAI → Flux (REPLICATE_API_TOKEN) → Stability (STABILITY_API_KEY)
+    #        → ai33.pro (AI33_API_KEY) → local SD WebUI if reachable.
+    provider: auto
+    prompt_from: image_prompt    # image_prompt | text
+    openai_model: gpt-image-1    # or dall-e-3
+    flux_model: black-forest-labs/flux-schnell   # Replicate model (flux-dev for quality)
+    # --- ai33.pro (Imagen-style gateway, needs AI33_API_KEY) ---
+    # ai33_base_url: https://api.ai33.pro
+    ai33_model: bytedance-seedream-4.5           # see GET /v1i/models for options
+    ai33_resolution: 2K
+    local_url: http://localhost:7860             # AUTOMATIC1111 / Forge WebUI
+    local_steps: 25
+
+montage:
+  # Final video assembly with ffmpeg.
+  quality: 1080p                 # 720p | 1080p | 1440p | 2160p (short edge)
+  fps: 30
+  background: black              # letterbox/pad color for off-aspect images
+  fallback_scene_seconds: 4      # used when a scene has no audio and no estimate
+  # Ken Burns: slow zoom on each still (alternating in/out) so the video isn't a
+  # static slideshow. Fills the frame (crops to cover; no letterbox). Set false
+  # to keep the letterboxed static look instead.
+  ken_burns: true
+  ken_burns_zoom: 0.12           # max zoom fraction over a scene (0.12 = +12%)
+  # ffmpeg_binary: ffmpeg        # or an absolute path
+  # --- sound design (the `audiomix` step, runs after montage) ---
+  # Realize the Sound Designer's blueprint: synth + mix each scene's SFX cues and
+  # a music bed onto the finished video. SFX are generated with ffmpeg (no assets
+  # needed). Music uses music_file or a `music/` folder matched to the mood if
+  # present, else a subtle synthesized ambient pad.
+  sfx: true
+  sfx_gain: 0.5                  # loudness of SFX under the narration
+  music: true
+  music_gain: 0.12              # loudness of the music bed (keep low)
+  music_synth: true             # if no music file is found, synth an ambient pad
+  # music_file: /path/to/bed.mp3   # an explicit music bed for every video
+
+humanizer:
+  # Strength of the rewrite.
+  # light  = polish only, keep wording close
+  # medium = rephrase, vary rhythm, kill AI tells
+  # heavy  = fully rewrite in a casual human voice
+  strength: medium
+  # Run deterministic cleanup (em-dashes, banned phrases) after the LLM pass.
+  deterministic_cleanup: true
+  # Keep paragraph breaks from the source.
+  preserve_paragraphs: true
