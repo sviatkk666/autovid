@@ -113,6 +113,10 @@ images:
   # Where to build the search query from: image_prompt | text
   query_from: image_prompt
   query_max_words: 8             # keep queries short — search engines prefer keywords
+  # smart_query: one cheap LLM pass turns each scene into LITERAL, photographable
+  # keywords (the real subject, not the art director's metaphor) so stock results
+  # actually match the narration. Falls back to keyword-strip if the LLM is down.
+  smart_query: true
   # --- generate ---
   generate:
     # provider: auto | openai | flux | stability | ai33 | local

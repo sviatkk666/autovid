@@ -61,6 +61,44 @@ def _build_query(scene, cfg: dict) -> str:
     return " ".join(chosen[:cap]).strip()
 
 
+_SMART_SYSTEM = """You write STOCK-PHOTO search queries. For each scene, output 2-4 \
+plain, LITERAL, concrete keywords that a stock site (Pexels) actually has photos of \
+— a photographable subject, object, place or action. NOT metaphors, emotions, \
+abstractions, made-up compounds, on-screen text, camera/lighting jargon, or full \
+sentences. If the scene is abstract (e.g. "discipline", "success"), translate it to \
+a concrete scene a photographer would shoot (e.g. "person running at dawn", \
+"climber reaching summit", "tidy desk laptop"). Match the literal subject of what's \
+being said. Output ONLY JSON: {"queries":[{"id":<int>,"q":"<keywords>"}]}"""
+
+
+def _smart_queries(scenes, cfg: dict) -> dict[int, str]:
+    """One LLM call → concrete, literal stock-photo keywords per scene id.
+
+    Stock engines match nouns, not the art director's descriptive/metaphorical
+    image_prompt — so we translate each beat into what a photographer would shoot.
+    Best-effort: any failure returns {} and the caller falls back to keyword-strip.
+    """
+    if not scenes:
+        return {}
+    from ..providers.llm import get_llm
+    from ..util import extract_json
+    lines = []
+    for s in scenes:
+        vis = (getattr(s, "image_prompt", "") or "").strip()
+        lines.append(f'{s.id}: says "{s.text.strip()[:180]}"' + (f' | wants "{vis[:160]}"' if vis else ""))
+    try:
+        raw = get_llm(cfg, "art_director").complete(_SMART_SYSTEM, "Scenes:\n" + "\n".join(lines), temperature=0.3)
+        data = extract_json(raw)
+        out: dict[int, str] = {}
+        for it in (data.get("queries") if isinstance(data, dict) else []) or []:
+            if isinstance(it, dict) and it.get("id") is not None and it.get("q"):
+                out[int(it["id"])] = re.sub(r"[^\w\s]", " ", str(it["q"])).strip()
+        return out
+    except Exception as e:  # noqa: BLE001 — fall back to keyword extraction
+        print(f"[images] smart-query skipped ({e})", file=sys.stderr)
+        return {}
+
+
 def _ext_for(url: str, content_type: str) -> str:
     ct = (content_type or "").split(";")[0].strip().lower()
     if ct in _EXT_BY_TYPE:
@@ -113,6 +151,12 @@ def fetch_project(
     http = requests.Session()
     http.headers["User-Agent"] = "autovid/0.1 image pipeline"
 
+    # Scenes we'll actually search this run → one LLM call for literal stock queries.
+    targets = [s for s in project.scenes
+               if (only is None or s.id in only)
+               and not (s.image_path and (project.dir / s.image_path).exists() and not force)]
+    smart = _smart_queries(targets, cfg) if cfg.get("images", {}).get("smart_query", True) else {}
+
     for scene in project.scenes:
         if only is not None and scene.id not in only:
             continue
@@ -120,7 +164,7 @@ def fetch_project(
             print(f"[images] scene {scene.id}: skip (exists)", file=sys.stderr)
             continue
 
-        query = _build_query(scene, cfg)
+        query = smart.get(scene.id) or _build_query(scene, cfg)
         if not query:
             print(f"[images] scene {scene.id}: skip (empty query)", file=sys.stderr)
             continue
