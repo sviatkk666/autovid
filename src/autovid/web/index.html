@@ -170,6 +170,10 @@
   .thumbv .badge{position:absolute;top:7px;left:7px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;
     background:rgba(8,9,13,.78);color:var(--muted);backdrop-filter:blur(4px)}
   .thumbv.sel .badge{background:var(--teal);color:#03190f}
+  .dlbtn{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+    font-size:13px;text-decoration:none;background:rgba(8,9,13,.82);color:var(--text);border:1px solid var(--line2);
+    backdrop-filter:blur(4px);opacity:.7;transition:.14s}
+  .thumbv:hover .dlbtn{opacity:1} .dlbtn:hover{background:var(--surface3);text-decoration:none}
 
   /* ---------- scenes ---------- */
   .scene{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:16px;margin-bottom:13px;
@@ -533,7 +537,7 @@ function renderProject(){
     el('div',{className:'row'},
       el('span',{className:'status-tag '+(p.status||'draft'),textContent:p.status||'draft'}),
       p.channel?el('button',{className:'sm ghost',textContent:'← '+p.channel,onclick:()=>openChannel(p.channel)}):null,
-      p.video_url?el('a',{href:p.video_url,target:'_blank'},el('button',{className:'sm ghost',textContent:'open mp4'})):null,
+      p.video_url?el('a',{href:p.video_url,download:p.slug+'.mp4'},el('button',{className:'sm ghost',textContent:'⬇ mp4'})):null,
       el('button',{className:'danger sm ghost',textContent:'delete',onclick:()=>delProject()}))));
 
   // pipeline console (centerpiece)
@@ -589,12 +593,16 @@ function renderOutput(){
       const cell=el('div',{className:'thumbv'+(v.selected?' sel':''),title:'click to use this thumbnail',
         onclick:()=>selectThumb(v.path)});
       cell.append(el('img',{src:v.url}),
-        el('div',{className:'badge',textContent:v.selected?'✓ selected':'#'+(i+1)}));
+        el('div',{className:'badge',textContent:v.selected?'✓ selected':'#'+(i+1)}),
+        el('a',{className:'dlbtn',href:v.url,download:`${p.slug}-thumb-${i+1}.png`,title:'download this thumbnail',
+          textContent:'⬇',onclick:e=>e.stopPropagation()}));
       grid.append(cell);
     });
     card.append(grid);
   } else if(p.thumbnail_url){
-    card.append(el('img',{src:p.thumbnail_url,style:'max-width:280px;border-radius:11px;border:1px solid var(--line)'}));
+    card.append(el('div',{style:'display:inline-block'},
+      el('img',{src:p.thumbnail_url,style:'max-width:280px;border-radius:11px;border:1px solid var(--line);display:block'}),
+      el('a',{href:p.thumbnail_url,download:`${p.slug}-thumbnail.png`},el('button',{className:'sm ghost',style:'margin-top:8px',textContent:'⬇ download thumbnail'}))));
   } else {
     card.append(el('div',{className:'empty',textContent:'No thumbnails yet.'}));
   }

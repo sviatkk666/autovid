@@ -181,6 +181,20 @@ def _art_director(script: str, cfg: dict, llm: LLM, channel_profile: str = "") -
     return scenes
 
 
+def split_and_direct(script: str, cfg: dict, channel_profile: str = "",
+                     channel_max_ai: float | None = None, llm: LLM | None = None) -> list[Scene]:
+    """Split a script into scenes AND have the Art Director decide each scene's full
+    treatment — visual_type + animation (camera move) + transition — then apply the
+    AI-image cap. This is the single path all scene generation should go through so
+    motion/transitions are always agent-chosen, never left at defaults."""
+    scenes = _art_director(script, cfg, llm or get_llm(cfg, "art_director"),
+                           channel_profile=channel_profile)
+    max_ai = (channel_max_ai if (channel_max_ai is not None and channel_max_ai >= 0)
+              else float(cfg.get("director", {}).get("max_ai_fraction", 0.2)))
+    enforce_ai_cap(scenes, max_ai)
+    return scenes
+
+
 def enforce_ai_cap(scenes: list[Scene], max_fraction: float = 0.2) -> int:
     """Demote 'generate' scenes beyond the cap to 'photo_edit'. Returns #demoted."""
     n = len(scenes)

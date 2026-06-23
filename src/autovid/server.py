@@ -44,7 +44,7 @@ from .modules.agent import run_agent
 from .modules.audiomix import audiomix_done, mix_project
 from .modules.captions import make_captions
 from .modules.chartgen import chart_project
-from .modules.director import build_blueprint
+from .modules.director import build_blueprint, split_and_direct
 from .modules.strategist import (channel_edit_turn, channel_setup_turn, chat_reply,
                                  draft_profile, extract_brief)
 from .modules.humanizer import humanize_text
@@ -382,7 +382,11 @@ def _create_project(*, title: str, raw: str, aspect: str, cfg: dict) -> str:
     """Create a project from a ready script: parse into scenes and save."""
     from .util import slugify
     slug = _unique_slug(slugify(title))
-    scenes = parse_script(raw, cfg)
+    try:   # art-direct on creation so scenes carry visual_type + animation + transition
+        scenes = split_and_direct(raw, cfg)
+    except Exception as e:  # noqa: BLE001
+        print(f"[create] art director unavailable ({e}); plain split", file=sys.stderr)
+        scenes = parse_script(raw, cfg)
     Project(slug=slug, title=title, aspect=aspect, script_raw=raw, scenes=scenes).save()
     print(f"[create] {slug}: {len(scenes)} scenes", file=sys.stderr)
     return slug
@@ -530,7 +534,17 @@ def run_step(slug: str, step: str, body: dict = Body(default={})):
             p.save()
         elif step == "parse":
             src = p.script_human or p.script_raw
-            p.scenes = parse_script(src, cfg)
+            if not (src or "").strip():
+                raise ValueError("write a script before splitting into scenes")
+            prof, max_ai = "", None
+            if p.channel and Channel.exists(p.channel):
+                ch = Channel.load(p.channel)
+                prof, max_ai = ch.profile_text(), ch.max_ai_fraction
+            try:   # the Art Director splits AND assigns visual_type + animation + transition
+                p.scenes = split_and_direct(src, cfg, channel_profile=prof, channel_max_ai=max_ai)
+            except Exception as e:  # noqa: BLE001 — degrade to a plain split if the LLM is unreachable
+                print(f"[parse] art director unavailable ({e}); plain split", file=sys.stderr)
+                p.scenes = parse_script(src, cfg)
             p.save()
         elif step == "tts":
             synthesize_project(p, cfg, force=force, only=only)
