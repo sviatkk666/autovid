@@ -41,6 +41,15 @@ DEFAULT_AGENTS = ("screenwriter", "humanizer", "art_director",
                   "voice_director", "sound_designer", "showrunner")
 
 
+def normalize_visual_type(s: str) -> str:
+    """Canonicalize a visual_type to one of VISUAL_TYPES (default 'search').
+
+    Tolerates spaces/hyphens (e.g. "Text Card" / "text-card" -> "text_card").
+    """
+    v = (s or "search").strip().lower().replace(" ", "_").replace("-", "_")
+    return v if v in VISUAL_TYPES else "search"
+
+
 # --- per-agent LLM (optional model/temperature override) ---------------------
 
 def _agent_cfg(cfg: dict, role: str) -> dict:

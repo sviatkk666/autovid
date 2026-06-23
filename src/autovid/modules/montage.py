@@ -133,6 +133,18 @@ def _xfade_name(t: str) -> str:
     return _XFADE.get((t or "").strip().lower().replace("_", "-"), "")
 
 
+def normalize_animation(s: str) -> str:
+    """Canonicalize a camera-move name to one of ANIMATIONS (default 'auto')."""
+    a = (s or "auto").strip().lower().replace("_", "-").replace(" ", "-").replace("ken-burns", "kenburns")
+    return a if a in ANIMATIONS else "auto"
+
+
+def normalize_transition(s: str) -> str:
+    """Canonicalize a transition name to one of TRANSITIONS ('' = use the default)."""
+    t = (s or "").strip().lower().replace("_", "-").replace(" ", "-")
+    return t if t in TRANSITIONS else ""
+
+
 def scene_clip_cmd(
     binary: str, image: Path, audio: Path | None, out: Path,
     w: int, h: int, fps: int, bg: str, duration: float,
@@ -197,9 +209,10 @@ def xfade_concat_cmd(binary: str, clips: list[Path], durations: list[float],
             any_real = any_real or default != "cut"
     if not any_real:
         return None
-    # clamp each boundary to fit the shorter neighbour
+    # clamp each boundary so it can never exceed ~half of either neighbour clip
+    # (xfade/acrossfade error out if the overlap is longer than an input)
     for j in range(len(durs)):
-        durs[j] = max(0.05, min(durs[j], 0.5 * durations[j], 0.5 * durations[j + 1]))
+        durs[j] = max(0.05, min(durs[j], 0.45 * durations[j], 0.45 * durations[j + 1]))
 
     inputs: list[str] = []
     for c in clips:
@@ -218,7 +231,7 @@ def xfade_concat_cmd(binary: str, clips: list[Path], durations: list[float],
     return [binary, "-y", *inputs, "-filter_complex", ";".join(parts),
             "-map", f"[{vprev}]", "-map", f"[{aprev}]",
             "-c:v", "libx264", "-preset", "medium", "-pix_fmt", "yuv420p",
-            "-r", "30", "-c:a", "aac", "-b:a", "192k", str(out)]
+            "-r", str(fps), "-c:a", "aac", "-b:a", "192k", str(out)]
 
 
 def _run(cmd: list[str], dry_run: bool) -> None:

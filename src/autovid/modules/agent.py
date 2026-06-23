@@ -16,7 +16,8 @@ from __future__ import annotations
 from ..providers.llm import get_llm
 from ..util import extract_json
 from .chartgen import chart_project  # noqa: F401  (kept for parity / future tools)
-from .director import _art_director, build_blueprint, enforce_ai_cap
+from .director import _art_director, build_blueprint, enforce_ai_cap, normalize_visual_type
+from .montage import normalize_animation, normalize_transition
 from .humanizer import humanize_text  # noqa: F401
 from .images import fetch_project  # noqa: F401
 from .montage import build_video
@@ -179,10 +180,14 @@ def run_agent(project, messages, cfg, *, channel_profile="", channel_signature="
                 if not sc:
                     r = f"no scene {a.get('id')}"
                 else:
+                    # Normalize the controlled-vocabulary fields so a loose LLM value
+                    # ("Zoom In", "Photo Edit", "glitch") can't persist a bogus blueprint.
+                    _norm = {"visual_type": normalize_visual_type,
+                             "animation": normalize_animation, "transition": normalize_transition}
                     for k in ("text", "image_prompt", "visual_type", "animation",
                               "transition", "voice", "delivery", "music", "notes"):
                         if a.get(k) is not None:
-                            setattr(sc, k, a[k])
+                            setattr(sc, k, _norm[k](a[k]) if k in _norm else a[k])
                     r = f"edited scene {sc.id}"
 
             elif tool == "set_project":

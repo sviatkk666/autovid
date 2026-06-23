@@ -51,16 +51,26 @@ def realize_visuals(
     scenes = [s for s in project.scenes if only is None or s.id in only]
     groups: dict[str, set[int]] = defaultdict(set)
     for s in scenes:
-        groups[(s.visual_type or "search").lower()].add(s.id)
+        # Tolerate loose stored values ("Text Card" / "text-card") -> canonical key.
+        vt = (s.visual_type or "search").strip().lower().replace(" ", "_").replace("-", "_")
+        groups[vt].add(s.id)
 
     for vtype, ids in groups.items():
         maker = _MAKERS.get(vtype, fetch_project)
-        if vtype == "animation":
-            print("[visuals] animation has no renderer yet — using a stock photo",
-                  file=sys.stderr)
+        if maker is fetch_project and vtype != "search":
+            print(f"[visuals] '{vtype}' has no maker — using a stock photo", file=sys.stderr)
         print(f"[visuals] {vtype}: {len(ids)} scene(s)", file=sys.stderr)
         try:
             maker(project, cfg, force=force, only=ids)
-        except (RuntimeError, ValueError) as e:
+        except Exception as e:  # noqa: BLE001 — render/provider/network: degrade, never abort
             print(f"[visuals] {vtype} failed ({e})", file=sys.stderr)
+            # An HTML-render type (chart/text_card/photo_edit) failing — e.g. no
+            # Chrome — would leave those scenes imageless; fall back to a stock photo
+            # so the scene survives into the montage instead of disappearing.
+            if maker is not fetch_project:
+                print(f"[visuals] falling back to stock photos for {len(ids)} {vtype} scene(s)", file=sys.stderr)
+                try:
+                    fetch_project(project, cfg, force=force, only=ids)
+                except Exception as e2:  # noqa: BLE001
+                    print(f"[visuals] stock-photo fallback also failed ({e2})", file=sys.stderr)
     return project
