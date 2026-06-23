@@ -83,6 +83,7 @@ def _target_words(cfg: dict, seconds: float | None = None) -> int:
     """
     scfg = cfg.get("scriptgen", {})
     secs = seconds if seconds is not None else float(scfg.get("target_seconds", 60))
+    secs = max(secs, float(scfg.get("min_seconds", 0)))   # enforce the minimum video length
     wps = float(cfg.get("parser", {}).get("words_per_second", 2.5))
     return max(40, int(secs * wps))
 
@@ -202,5 +203,22 @@ def write_script(
 
     llm = llm or get_llm(cfg)
     user = _script_user(brief, guide, tone, target_words, audience, cta)
-    script = llm.complete(_SCRIPT_SYSTEM, user, temperature=temperature)
-    return script.strip()
+    script = llm.complete(_SCRIPT_SYSTEM, user, temperature=temperature).strip()
+
+    # Long-form scripts: a single pass almost always underdelivers on length, so
+    # expand the draft (deepening beats, not padding) until it's near the target.
+    import sys
+    tries = 0
+    while len(script.split()) < 0.8 * target_words and tries < 3:
+        tries += 1
+        have = len(script.split())
+        print(f"[scriptgen] expanding script: {have}/{target_words} words (pass {tries})", file=sys.stderr)
+        script = llm.complete(
+            _SCRIPT_SYSTEM,
+            f"The narration below is too SHORT — it has {have} words but needs about "
+            f"{target_words} for this video's length. EXPAND it: go deeper on each existing "
+            f"beat with concrete specifics, examples, evidence and natural pacing/pauses. Do "
+            f"NOT add a new topic, do NOT repeat yourself, do NOT pad with filler or empty "
+            f"phrases. Keep the same voice and one through-line. Output ONLY the full script.\n\n"
+            f"{script}", temperature=temperature).strip()
+    return script

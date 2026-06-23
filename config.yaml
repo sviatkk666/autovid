@@ -45,8 +45,12 @@ scriptgen:
   # Who you're talking to (optional, sharpens the script).
   audience: ""
   # Target spoken length; script word count = target_seconds * parser.words_per_second.
-  # ~60s suits Shorts/Reels; bump to 180-300 for long-form 16:9.
-  target_seconds: 60
+  # ~60s suits Shorts/Reels; long-form 16:9 wants 540+ (9 min).
+  target_seconds: 540
+  # Hard floor on every video's length (seconds). A shorter request is bumped up to
+  # this, and the script writer expands the draft until it reaches it. Set 0 to allow
+  # short videos. 540 = 9 minutes.
+  min_seconds: 540
   # Optional closing call-to-action woven in naturally (e.g. "follow for more").
   cta: ""
 
@@ -72,7 +76,8 @@ parser:
   # mode: auto | llm | deterministic
   # auto = use the LLM if available, else fall back to deterministic splitting.
   mode: auto
-  target_scene_seconds: 8        # aim for scenes ~this many seconds of narration
+  target_scene_seconds: 12       # aim for scenes ~this many seconds of narration
+                                 # (longer = fewer scenes; keeps long videos manageable)
   words_per_second: 2.5          # ~150 wpm narration, for duration estimates
   # Appended to every image prompt to keep a consistent visual look.
   image_style: "cinematic, photorealistic, high detail, dramatic lighting"
