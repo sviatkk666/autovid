@@ -42,6 +42,7 @@ from .providers.ai33 import ai33_credits
 from .providers.llm import available_models
 from .modules.agent import run_agent
 from .modules.audiomix import audiomix_done, mix_project
+from .modules.captions import make_captions
 from .modules.chartgen import chart_project
 from .modules.director import build_blueprint
 from .modules.strategist import (channel_edit_turn, channel_setup_turn, chat_reply,
@@ -52,6 +53,7 @@ from .modules.images import fetch_project
 from .modules.montage import ANIMATIONS, TRANSITIONS, build_video
 from .modules.parser import parse_script
 from .modules.photo_edit import photo_edit_project
+from .modules.publish import make_publish_kit
 from .modules.scriptgen import brainstorm_ideas, write_script
 from .modules.thumbnail import make_thumbnail
 from .modules.textcard import textcard_project
@@ -243,7 +245,9 @@ def _step_status(p: Project) -> dict:
         "images": {"done": n > 0 and imaged == n, "have": imaged, "total": n},
         "montage": bool(p.video_path) and (p.dir / p.video_path).exists(),
         "audiomix": audiomix_done(p),
+        "captions": bool((p.captions or {}).get("srt")) and (p.dir / p.captions["srt"]).exists(),
         "thumbnail": bool(p.thumbnail_path) and (p.dir / p.thumbnail_path).exists(),
+        "publish": bool((p.publish or {}).get("description")),
     }
 
 
@@ -259,6 +263,9 @@ def _project_view(p: Project, *, full: bool = True) -> dict:
         {"path": rel, "url": _asset_url(p.slug, rel), "selected": rel == p.thumbnail_path}
         for rel in (p.thumbnails or []) if _asset_url(p.slug, rel)
     ]
+    data["caption_urls"] = {fmt: _asset_url(p.slug, rel)
+                            for fmt, rel in (p.captions or {}).items()
+                            if isinstance(rel, str) and _asset_url(p.slug, rel)}
     if full:
         for s, sv in zip(p.scenes, data["scenes"]):
             sv["audio_url"] = _asset_url(p.slug, s.audio_path)
@@ -314,7 +321,8 @@ def get_config():
         "transitions": list(TRANSITIONS),              # scene-to-scene transitions
         "create_modes": ["director", "topic", "idea", "script", "batch"],
         "steps": ["humanize", "parse", "tts", "visuals", "images", "imagegen",
-                  "chart", "text_card", "photo_edit", "montage", "audiomix", "thumbnail"],
+                  "chart", "text_card", "photo_edit", "montage", "audiomix",
+                  "captions", "thumbnail", "publish"],
         "tts_providers": ["auto", "elevenlabs", "ai33", "piper"],
         "voices": list_voices(CFG),
         "director_agents": list(CFG.get("director", {}).get(
@@ -542,8 +550,13 @@ def run_step(slug: str, step: str, body: dict = Body(default={})):
             build_video(p, cfg, force=force)
         elif step == "audiomix":
             mix_project(p, cfg, force=force)
+        elif step == "captions":
+            make_captions(p, cfg, force=force)
         elif step == "thumbnail":
             make_thumbnail(p, cfg, force=force)
+        elif step == "publish":
+            prof = Channel.load(p.channel).profile_text() if p.channel and Channel.exists(p.channel) else ""
+            make_publish_kit(p, cfg, channel_profile=prof, force=force)
         else:
             raise ValueError(f"unknown step '{step}'")
         return {"slug": slug}
@@ -567,6 +580,8 @@ def patch_project(slug: str, body: dict = Body(...)):
         for key in _PROJECT_FIELDS:
             if key in body and body[key] is not None:
                 setattr(p, key, body[key])
+        if isinstance(body.get("publish"), dict):   # merge edits into the publish kit
+            p.publish = {**(p.publish or {}), **body["publish"]}
         p.save()
         return _project_view(p)
 

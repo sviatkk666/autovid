@@ -113,6 +113,15 @@ TRANSITIONS (into the scene): "cut" (energetic, punchy), "fade"/"dissolve" \
 "slide-*"/"wipe-*" (directional momentum), "zoom"/"circle" (dramatic). Match the \
 transition to the pacing of the beat; the first scene is always a "cut".
 
+COHESION (critical — the video must NOT look like a slideshow of disconnected \
+stills): make it feel like ONE continuous piece. Keep ONE consistent look across \
+scenes (palette, mood, framing per the channel's visual style); give EVERY scene \
+deliberate motion (almost never "static" on a photo); choose transitions that \
+CONNECT consecutive beats (a fade/dissolve for a soft shift, a slide/wipe to push \
+forward, a hard cut only for a deliberate jolt) rather than random ones; and \
+sequence shots so they flow (establishing -> detail -> reaction). Vary treatments \
+for rhythm, but never at the cost of the through-line.
+
 Keep image_prompt free of on-screen text and narration restatement (text_card and \
 chart handle their own words)."""
 

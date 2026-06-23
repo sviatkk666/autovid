@@ -385,7 +385,9 @@ const PIPELINE=[
   {key:'tts',      label:'Voice',    hint:'Voice every scene'},
   {key:'montage',  label:'Render',   hint:'Assemble scenes into the video'},
   {key:'audiomix', label:'Audio',    hint:'Mix SFX cues + a music bed onto the video'},
+  {key:'captions', label:'Captions', hint:'Transcribe the narration to subtitles (Whisper)'},
   {key:'thumbnail',label:'Thumb',    hint:'Design thumbnail variants'},
+  {key:'publish',  label:'Publish',  hint:'Write the YouTube title / description / tags / chapters'},
 ];
 function stageStatus(key){
   const s=CUR.steps, hasScript=!!(CUR.script_raw||CUR.script_human), hasScenes=(CUR.scenes||[]).length>0;
@@ -397,6 +399,8 @@ function stageStatus(key){
     case 'montage':  return s.montage?{state:'done',note:'rendered'}:{state:(s.images.have||s.tts.have)?'ready':'todo',note:'not built'};
     case 'audiomix': return s.audiomix?{state:'done',note:'sfx + music'}:(s.montage?{state:'ready',note:'sfx + music'}:{state:'todo',note:'needs render'});
     case 'thumbnail':{const n=(CUR.thumbnail_variants||[]).length; return s.thumbnail?{state:'done',note:(n||1)+' variant'+((n||1)>1?'s':'')}:{state:hasScenes?'ready':'todo',note:'none'};}
+    case 'captions': return s.captions?{state:'done',note:'srt + vtt'}:{state:s.montage?'ready':'todo',note:s.montage?'none':'needs render'};
+    case 'publish':  return s.publish?{state:'done',note:'kit ready'}:{state:hasScript?'ready':'todo',note:'none'};
   }
 }
 const STATE_ICON={done:'✓',partial:'◐',ready:'▸',todo:'·',error:'✕'};
@@ -538,6 +542,9 @@ function renderProject(){
   // output (video + thumbnail picker)
   if(p.video_url || (p.thumbnail_variants||[]).length || p.thumbnail_url) m.append(renderOutput());
 
+  // youtube publish kit (titles / description / tags / chapters)
+  m.append(renderPublish());
+
   // producer chat
   m.append(renderAgentChat());
 
@@ -561,6 +568,14 @@ function renderOutput(){
   if(p.video_url) r.append(el('video',{src:p.video_url,controls:true}));
   else r.append(el('div',{className:'empty',textContent:'No video rendered yet — press ▶ Produce video.'}));
   card.append(r);
+  const cap=p.caption_urls||{};
+  if(cap.srt||cap.vtt){
+    const cr=el('div',{className:'row',style:'margin-top:10px'},el('span',{className:'pill',textContent:'Captions (Whisper):'}));
+    if(cap.srt) cr.append(el('a',{href:cap.srt,download:'captions.srt'},el('button',{className:'xs ghost',textContent:'⬇ .srt'})));
+    if(cap.vtt) cr.append(el('a',{href:cap.vtt,download:'captions.vtt'},el('button',{className:'xs ghost',textContent:'⬇ .vtt'})));
+    if((p.captions||{}).burned) cr.append(el('span',{className:'pill',textContent:'· burned into video'}));
+    card.append(cr);
+  }
   // thumbnails
   const variants=p.thumbnail_variants||[];
   card.append(el('div',{className:'spread',style:'margin:18px 0 10px'},
@@ -590,6 +605,50 @@ async function selectThumb(path){
   try{ const res=await api.post(`/api/projects/${slug}/select-thumbnail`,{path});
     if(CUR&&CUR.slug===slug){ CUR=res; renderProject(); } await refreshProjects(); }
   catch(e){ alert(e.message); }
+}
+
+// ---------- youtube publish kit ----------
+function copyBtn(getText,label){ return el('button',{className:'xs ghost',textContent:label||'copy',onclick:async e=>{
+  const b=e.target; try{ await navigator.clipboard.writeText(getText()||''); const o=b.textContent; b.textContent='✓ copied'; setTimeout(()=>{b.textContent=o;},1200); }
+  catch(err){ b.textContent='⚠'; } }}); }
+async function patchPublish(patch){ const slug=CUR.slug; const res=await api.patch('/api/projects/'+slug,{publish:patch}); if(CUR&&CUR.slug===slug) CUR=res; }
+function renderPublish(){
+  const p=CUR, pub=p.publish||{};
+  const card=el('div',{className:'card'});
+  card.append(el('div',{className:'spread'},el('h3',{style:'margin:0',textContent:'YouTube publish kit'}),
+    el('button',{className:'sm ghost',textContent:pub.description?'↻ regenerate':'✦ generate',onclick:()=>runStage('publish',{force:!!pub.description})})));
+  if(!pub.description){
+    card.append(el('div',{className:'empty',textContent:'Everything to post the video — title options, SEO description, tags, hashtags, chapters and a pinned comment. Generate it here (it also runs with ▶ Produce).'}));
+    return card;
+  }
+  if((pub.titles||[]).length){
+    card.append(el('label',{textContent:'Title options — ✓ to use as the video title'}));
+    pub.titles.forEach(t=>card.append(el('div',{className:'row',style:'gap:6px;margin-bottom:5px;flex-wrap:nowrap'},
+      el('button',{className:'xs go',title:'use as title',textContent:'✓',onclick:async()=>{const slug=p.slug;await patchProj({title:t});if(CUR&&CUR.slug===slug)renderProject();}}),
+      copyBtn(()=>t),
+      el('span',{style:'flex:1;font-size:13px',textContent:t}))));
+  }
+  const desc=el('textarea',{rows:7,value:pub.description||''});
+  desc.onblur=()=>patchPublish({description:desc.value});
+  card.append(el('div',{className:'spread',style:'margin-top:12px'},el('label',{style:'margin:0',textContent:'Description (editable)'}),copyBtn(()=>desc.value)),desc);
+  const tags=(pub.tags||[]).join(', '), htags=(pub.hashtags||[]).join(' ');
+  card.append(el('div',{className:'spread',style:'margin-top:12px'},el('label',{style:'margin:0',textContent:'Tags'}),copyBtn(()=>tags)),
+    el('div',{className:'pill',style:'word-break:break-word',textContent:tags||'—'}));
+  card.append(el('div',{className:'spread',style:'margin-top:8px'},el('label',{style:'margin:0',textContent:'Hashtags'}),copyBtn(()=>htags)),
+    el('div',{className:'pill',style:'word-break:break-word',textContent:htags||'—'}));
+  if((pub.chapters||[]).length){
+    const chText=pub.chapters.map(c=>`${c.time} ${c.label}`).join('\n');
+    card.append(el('div',{className:'spread',style:'margin-top:8px'},el('label',{style:'margin:0',textContent:'Chapters'}),copyBtn(()=>chText)));
+    const cl=el('div',{style:'font-size:12.5px;color:var(--muted);line-height:1.7'});
+    pub.chapters.forEach(c=>cl.append(el('div',{},el('span',{style:'color:var(--cyan)',textContent:c.time+'  '}),document.createTextNode(c.label))));
+    card.append(cl);
+  }
+  if(pub.pinned_comment){
+    card.append(el('div',{className:'spread',style:'margin-top:8px'},el('label',{style:'margin:0',textContent:'Pinned comment'}),copyBtn(()=>pub.pinned_comment)),
+      el('div',{className:'pill',style:'word-break:break-word',textContent:pub.pinned_comment}));
+  }
+  if(pub.category) card.append(el('div',{className:'pill',style:'margin-top:8px',textContent:'Category: '+pub.category}));
+  return card;
 }
 
 // ---------- blueprint / script / scenes (manual fallback) ----------

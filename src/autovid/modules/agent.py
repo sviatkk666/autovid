@@ -22,6 +22,8 @@ from .humanizer import humanize_text  # noqa: F401
 from .images import fetch_project  # noqa: F401
 from .montage import build_video
 from .audiomix import mix_project
+from .captions import make_captions
+from .publish import make_publish_kit
 from .scriptgen import write_script
 from .thumbnail import make_thumbnail
 from .tts import synthesize_project
@@ -41,6 +43,10 @@ Rules you always follow:
   = 540). The writer targets ~150 words per minute. Default ~60s if unspecified.
 - Always design with the FULL visual toolbox below and keep the mix VARIED — a
   video should never be all one look or one motion.
+- COHESION: the result must feel like ONE continuous video, NOT a slideshow of
+  disconnected stills. Keep a consistent look, give nearly every scene motion, and
+  use transitions that connect the beats (not random). Vary for rhythm, but keep
+  the through-line.
 
 VISUAL TOOLBOX (you can set these per scene via edit_scene):
 - visual_type — how the still is MADE:
@@ -66,7 +72,7 @@ Actions:
 - {"tool":"split_scenes"}                     split the current script into scenes + full visual treatment
 - {"tool":"edit_scene","id":N,"text":"...","visual_type":"search|photo_edit|chart|text_card|generate","animation":"<see toolbox>","transition":"<see toolbox>","voice":"...","delivery":"...","image_prompt":"..."}  (include only the fields to change)
 - {"tool":"set_project","title":"...","voice":"...","music":"...","aspect":"16:9|9:16"}
-- {"tool":"run","step":"visuals|voice|montage|audiomix|thumbnail|all"}   produce assets / render the video
+- {"tool":"run","step":"visuals|voice|montage|audiomix|captions|thumbnail|publish|all"}   produce assets / render / caption / write the YouTube publish kit ("all" does everything for posting)
 """
 
 
@@ -216,7 +222,8 @@ def run_agent(project, messages, cfg, *, channel_profile="", channel_signature="
 
             elif tool == "run":
                 step = a.get("step", "all")
-                seq = ["visuals", "voice", "montage", "audiomix"] if step == "all" else [step]
+                seq = (["visuals", "voice", "montage", "audiomix", "captions", "thumbnail", "publish"]
+                       if step == "all" else [step])
                 done = []
                 for s in seq:
                     if s == "visuals":
@@ -227,8 +234,12 @@ def run_agent(project, messages, cfg, *, channel_profile="", channel_signature="
                         build_video(project, cfg)
                     elif s == "audiomix":
                         mix_project(project, cfg)
+                    elif s == "captions":
+                        make_captions(project, cfg)
                     elif s == "thumbnail":
                         make_thumbnail(project, cfg)
+                    elif s == "publish":
+                        make_publish_kit(project, cfg, channel_profile=channel_profile)
                     else:
                         continue
                     done.append(s)

@@ -171,6 +171,17 @@ humanizer:
   # Keep paragraph breaks from the source.
   preserve_paragraphs: true
 
+captions:
+  # The `captions` step transcribes the narration to subtitles (captions.srt + .vtt).
+  # provider: auto | whisper | script
+  #   whisper = OpenAI Whisper API (whisper-1) on the rendered audio (needs OPENAI_API_KEY)
+  #   script  = deterministic, from the scene text + timeline (free, always works)
+  #   auto    = whisper when a video + key exist, else script.
+  provider: auto
+  model: whisper-1
+  burn: false                    # true = hard-burn the captions into the video (re-encode)
+  # style: "FontName=Arial,Fontsize=22,Bold=1,Outline=2,MarginV=40"   # ASS style when burning
+
 thumbnail:
   # The `thumbnail` step designs YouTube thumbnails as self-contained HTML and
   # screenshots them to PNG with headless Chrome. It produces several distinct
