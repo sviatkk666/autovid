@@ -543,6 +543,17 @@ function renderProject(){
   // pipeline console (centerpiece)
   m.append(renderPipeline());
 
+  // missing-visuals notice — retry just the scenes whose image didn't load
+  const missV=(p.scenes||[]).filter(s=>!s.image_url);
+  if(p.scenes.length && missV.length){
+    m.append(el('div',{className:'card',style:'border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.06);padding:13px 16px;margin-bottom:18px'},
+      el('div',{className:'spread'},
+        el('div',{style:'font-size:13px'},el('b',{textContent:`⚠ ${missV.length} of ${p.scenes.length} scenes`}),
+          document.createTextNode(' have no image yet (search came up empty or a render failed).')),
+        el('button',{className:'go sm',textContent:`↻ Fill ${missV.length} missing visual${missV.length>1?'s':''}`,
+          onclick:()=>runStage('visuals',{only:missV.map(s=>s.id)})}))));
+  }
+
   // output (video + thumbnail picker)
   if(p.video_url || (p.thumbnail_variants||[]).length || p.thumbnail_url) m.append(renderOutput());
 
