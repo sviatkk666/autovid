@@ -13,6 +13,7 @@ Entry point: run_agent(project, messages, cfg, channel_*, log) -> {reply, action
 
 from __future__ import annotations
 
+from ..project import Scene
 from ..providers.llm import get_llm
 from ..util import extract_json
 from .chartgen import chart_project  # noqa: F401  (kept for parity / future tools)
@@ -39,6 +40,12 @@ Rules you always follow:
 - Honor the CHANNEL PROFILE if one is given (voice, rules, visual style, the
   recurring intro/sign-off/CTA).
 - When splitting a script into scenes, keep the narration VERBATIM.
+- TARGETED EDITS: when the creator is talking about SPECIFIC scenes ("change scene
+  3", "add a scene about X after scene 5", "cut the part about Y", "make scene 2
+  punchier"), touch ONLY those scenes via edit_scene / add_scene / delete_scene —
+  one action per scene. Do NOT rewrite the whole script or re-split everything. Only
+  use rewrite / split_scenes / generate_script / blueprint when they clearly want to
+  redo the ENTIRE video from scratch.
 - If the creator asks for a LENGTH (e.g. "9 minutes", "90 seconds", "a 5-min
   video"), put it on generate_script/blueprint as "seconds" (minutes x 60: 9 min
   = 540). The writer targets ~150 words per minute. Default ~60s if unspecified.
@@ -72,7 +79,9 @@ Actions:
 - {"tool":"rewrite","instruction":"..."}     rewrite the current script per the instruction
 - {"tool":"blueprint","topic":"...","seconds":<optional total length in seconds>}   run the FULL director at once (script+scenes+visuals+motion+voice+sound). Use when they want "make the whole thing".
 - {"tool":"split_scenes"}                     split the current script into scenes + full visual treatment
-- {"tool":"edit_scene","id":N,"text":"...","visual_type":"search|photo_edit|chart|text_card|generate","animation":"<see toolbox>","transition":"<see toolbox>","voice":"...","delivery":"...","image_prompt":"..."}  (include only the fields to change)
+- {"tool":"edit_scene","id":N,"text":"...","visual_type":"search|photo_edit|chart|text_card|generate","animation":"<see toolbox>","transition":"<see toolbox>","voice":"...","delivery":"...","image_prompt":"..."}  (change ONE existing scene — include only the fields to change)
+- {"tool":"add_scene","after":<scene id, or null for the end>,"text":"<narration>","visual_type":"...","animation":"...","transition":"...","image_prompt":"...","voice":"...","delivery":"..."}  (insert ONE new scene)
+- {"tool":"delete_scene","id":N}   (remove ONE scene)
 - {"tool":"set_project","title":"...","voice":"...","music":"...","aspect":"16:9|9:16"}
 - {"tool":"run","step":"visuals|voice|montage|audiomix|captions|thumbnail|publish|all"}   produce assets / render / caption / write the YouTube publish kit ("all" does everything for posting)
 """
@@ -222,7 +231,46 @@ def run_agent(project, messages, cfg, *, channel_profile="", channel_signature="
                               "transition", "voice", "delivery", "music", "notes"):
                         if a.get(k) is not None:
                             setattr(sc, k, _norm[k](a[k]) if k in _norm else a[k])
+                    if sc.visual_type in ("chart", "text_card"):
+                        sc.animation = "static"
                     r = f"edited scene {sc.id}"
+
+            elif tool == "add_scene":
+                text = (a.get("text") or "").strip()
+                if not text:
+                    r = "add_scene needs narration text"
+                else:
+                    vt = normalize_visual_type(a.get("visual_type") or "search")
+                    new = Scene(
+                        id=project.next_scene_id(), text=text,
+                        image_prompt=(a.get("image_prompt") or "").strip(),
+                        visual_type=vt,
+                        animation="static" if vt in ("chart", "text_card") else normalize_animation(a.get("animation") or "auto"),
+                        transition=normalize_transition(a.get("transition") or ""),
+                        voice=(a.get("voice") or "").strip(),
+                        delivery=(a.get("delivery") or "").strip())
+                    after = a.get("after")
+                    idx = next((i for i, s in enumerate(project.scenes) if s.id == int(after)), None) if after not in (None, "") else None
+                    if idx is not None:
+                        project.scenes.insert(idx + 1, new)
+                    else:
+                        project.scenes.append(new)
+                    r = f"added scene {new.id}" + (f" after {after}" if idx is not None else " at the end")
+
+            elif tool == "delete_scene":
+                sid = int(a.get("id", 0))
+                sc = project.scene_by_id(sid)
+                if not sc:
+                    r = f"no scene {sid}"
+                else:
+                    for rel in (sc.audio_path, sc.image_path):   # clean up its assets
+                        if rel and (project.dir / rel).exists():
+                            try:
+                                (project.dir / rel).unlink()
+                            except OSError:
+                                pass
+                    project.scenes = [s for s in project.scenes if s.id != sid]
+                    r = f"removed scene {sid}"
 
             elif tool == "set_project":
                 for k in ("title", "voice", "music", "style", "aspect", "theme", "status", "blueprint_notes"):

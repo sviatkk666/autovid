@@ -205,20 +205,28 @@ def write_script(
     user = _script_user(brief, guide, tone, target_words, audience, cta)
     script = llm.complete(_SCRIPT_SYSTEM, user, temperature=temperature).strip()
 
-    # Long-form scripts: a single pass almost always underdelivers on length, so
-    # expand the draft (deepening beats, not padding) until it's near the target.
+    # Long-form scripts: a single pass underdelivers on length, AND the humanizer
+    # trims downstream — so expand toward target * a margin (overshoot), and only
+    # stop when the script genuinely stops growing.
     import sys
+    margin = float(scfg.get("length_margin", 1.15))
+    goal = int(target_words * margin)
     tries = 0
-    while len(script.split()) < 0.8 * target_words and tries < 3:
-        tries += 1
+    while len(script.split()) < goal and tries < 5:
         have = len(script.split())
-        print(f"[scriptgen] expanding script: {have}/{target_words} words (pass {tries})", file=sys.stderr)
-        script = llm.complete(
+        print(f"[scriptgen] expanding: {have} words → goal ~{goal} (pass {tries + 1})", file=sys.stderr)
+        expanded = llm.complete(
             _SCRIPT_SYSTEM,
-            f"The narration below is too SHORT — it has {have} words but needs about "
-            f"{target_words} for this video's length. EXPAND it: go deeper on each existing "
-            f"beat with concrete specifics, examples, evidence and natural pacing/pauses. Do "
-            f"NOT add a new topic, do NOT repeat yourself, do NOT pad with filler or empty "
-            f"phrases. Keep the same voice and one through-line. Output ONLY the full script.\n\n"
-            f"{script}", temperature=temperature).strip()
+            f"The narration below is too SHORT — it has {have} words but this video needs about "
+            f"{goal} words. EXPAND it substantially: go deeper on each existing beat with concrete "
+            f"specifics, examples, evidence, stakes and natural pacing/pauses. Do NOT add a new "
+            f"topic, do NOT repeat yourself, do NOT pad with filler or empty phrases. Keep the same "
+            f"voice and one through-line. Output ONLY the full script.\n\n{script}",
+            temperature=temperature).strip()
+        if len(expanded.split()) > have:
+            script = expanded
+        if len(expanded.split()) <= have + 25:   # stalled — more passes won't help
+            print(f"[scriptgen] expansion stalled at {len(script.split())} words", file=sys.stderr)
+            break
+        tries += 1
     return script

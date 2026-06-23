@@ -157,6 +157,9 @@ The rewrite must be more engaging than the original, not just different.
 Hard rules:
 - Do NOT add new facts, claims, or opinions that weren't in the source.
 - Do NOT add commentary, headings, or notes. Output ONLY the rewritten text.
+- PRESERVE THE LENGTH and every beat — rewrite for voice, but do NOT summarize, \
+condense, or drop content. Keep it within ~5% of the original word count (trim only \
+genuinely empty filler words, never whole sentences or ideas).
 - Preserve the paragraph breaks of the source unless told otherwise.
 - Keep it in the same language as the input."""
 

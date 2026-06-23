@@ -51,6 +51,10 @@ scriptgen:
   # this, and the script writer expands the draft until it reaches it. Set 0 to allow
   # short videos. 540 = 9 minutes.
   min_seconds: 540
+  # The writer aims for target_words * this margin (overshoot), because a single
+  # LLM pass underdelivers and downstream tightening trims a little. 1.05 = +5%
+  # (the humanizer now preserves length, so a small margin is enough).
+  length_margin: 1.05
   # Optional closing call-to-action woven in naturally (e.g. "follow for more").
   cta: ""
 
