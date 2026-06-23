@@ -140,7 +140,7 @@ def _slist(v) -> list[str]:
 
 def make_brand_kit(channel: Channel, cfg: dict, force: bool = False) -> Channel:
     """Generate the channel's account-creation brand kit onto the Channel."""
-    if channel.persona_name and channel.avatar_path and not force:
+    if channel.persona_name and not force:
         print("[brandkit] kit exists (use force to regenerate)", file=sys.stderr)
         return channel
 

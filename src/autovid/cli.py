@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .channel import Channel
@@ -264,6 +265,15 @@ def cmd_thumbnail(args: argparse.Namespace) -> int:
     return 0
 
 
+def _normalize_iso8601(s: str) -> str:
+    """Normalize a user-supplied time to strict RFC3339 'Z' (the CRM zod accepts
+    only that). Accepts date-only, naive, and +hh:mm forms; assumes UTC if naive."""
+    dt = datetime.fromisoformat(s.strip().replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def cmd_brandkit(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
 
@@ -271,6 +281,9 @@ def cmd_brandkit(args: argparse.Namespace) -> int:
         channel = Channel.load(args.slug)
     except FileNotFoundError:
         print(f"error: no channel '{args.slug}' (create it in the dashboard first).", file=sys.stderr)
+        return 1
+    except ValueError:
+        print(f"error: channel '{args.slug}' is corrupt (bad channel.json).", file=sys.stderr)
         return 1
 
     try:
@@ -291,9 +304,13 @@ def cmd_push_channel(args: argparse.Namespace) -> int:
     except FileNotFoundError:
         print(f"error: no channel '{args.slug}' (create it in the dashboard first).", file=sys.stderr)
         return 1
+    except ValueError:
+        print(f"error: channel '{args.slug}' is corrupt (bad channel.json).", file=sys.stderr)
+        return 1
 
-    # Ensure a brand kit exists (persona + avatar) before pushing.
-    if not channel.persona_name or not channel.avatar_path:
+    # Ensure a brand kit exists before pushing. Gate on persona only so a
+    # best-effort avatar/banner failure doesn't re-run the LLM kit every push.
+    if not channel.persona_name:
         try:
             channel = make_brand_kit(channel, cfg, force=False)
         except (RuntimeError, ValueError) as e:
@@ -372,6 +389,21 @@ def cmd_push(args: argparse.Namespace) -> int:
     except FileNotFoundError:
         print(f"error: no project '{args.slug}' (run the pipeline first).", file=sys.stderr)
         return 1
+    except ValueError:
+        print(f"error: project '{args.slug}' is corrupt (bad project.json).", file=sys.stderr)
+        return 1
+
+    scheduled_at = None
+    if args.scheduled_at:
+        try:
+            scheduled_at = _normalize_iso8601(args.scheduled_at)
+        except ValueError:
+            print(
+                f"error: --scheduled-at '{args.scheduled_at}' is not a valid date/time "
+                "(ISO8601, e.g. 2026-07-01T18:00:00Z).",
+                file=sys.stderr,
+            )
+            return 1
 
     if not project.video_path or not (project.dir / project.video_path).exists():
         print("error: no rendered video — run `montage` first.", file=sys.stderr)
@@ -425,8 +457,8 @@ def cmd_push(args: argparse.Namespace) -> int:
             "durationSec": _probe_duration(project),
             "bytes": mp4.stat().st_size,
         }
-        if args.scheduled_at:
-            payload["scheduledAt"] = args.scheduled_at
+        if scheduled_at:
+            payload["scheduledAt"] = scheduled_at
         ingest_video(payload)
     except (RuntimeError, FileNotFoundError) as e:
         print(f"error: {e}", file=sys.stderr)
@@ -821,7 +853,8 @@ def main(argv: list[str] | None = None) -> int:
     pu.add_argument("slug", help="project slug (folder under projects/)")
     pu.add_argument("--channel", default=None, help="CRM channel slug (default: the project's channel)")
     pu.add_argument("--scheduled-at", dest="scheduled_at", default=None,
-                    help="desired go-live time, ISO8601 (operator still approves first)")
+                    help="desired go-live time, ISO8601 e.g. 2026-07-01T18:00:00Z "
+                         "(normalized to UTC; operator still approves first)")
     pu.set_defaults(func=cmd_push)
 
     r = sub.add_parser("run", help="all-in-one: [generate ->] humanize -> parse -> tts -> images -> montage")
