@@ -33,9 +33,10 @@ from ..providers.voices import list_voices
 from ..util import extract_json
 from . import memory_store
 from .humanizer import humanize_text
+from .montage import ANIMATIONS, TRANSITIONS
 from .scriptgen import Idea, _niche_cfg, write_script
 
-VISUAL_TYPES = ("search", "photo_edit", "chart", "generate")
+VISUAL_TYPES = ("search", "photo_edit", "chart", "text_card", "generate")
 DEFAULT_AGENTS = ("screenwriter", "humanizer", "art_director",
                   "voice_director", "sound_designer", "showrunner")
 
@@ -64,27 +65,47 @@ def _enabled(cfg: dict, role: str) -> bool:
 # --- Art Director ------------------------------------------------------------
 
 _ART_SYSTEM = """You are the Art Director for a faceless YouTube channel. You \
-split a finished narration script into scenes and decide HOW each scene is \
-visualized. You output ONLY a JSON array.
+split a finished narration script into scenes and design the COMPLETE visual \
+treatment of each scene — what fills the frame, how the camera moves, and how it \
+transitions in. Use the full toolbox and VARY it so the video has visual rhythm; \
+never make every scene the same look or the same motion. You output ONLY a JSON array.
 
 For every scene return an object:
   "text": the narration for this scene, VERBATIM from the script (concatenating \
 all scene texts in order must reproduce the script; whitespace-only changes ok),
   "image_prompt": a concrete visual description of the still for this beat,
-  "visual_type": one of "search" | "photo_edit" | "chart" | "generate",
-  "visual_reason": one short clause justifying the choice.
+  "visual_type": how to MAKE the still — one of "search" | "photo_edit" | "chart" | "text_card" | "generate",
+  "animation": the camera MOVE over the still — one of {animations},
+  "transition": how this scene enters from the previous one — one of {transitions},
+  "visual_reason": one short clause justifying the visual choice.
 
-VISUAL POLICY (hard rules):
-- Default to "search" — a real stock/internet photo. The MAJORITY of scenes must \
-be "search". Real photos read as authentic; lean on them.
-- "photo_edit": a real stock photo that wants light polish — overlay text, a \
-color grade, a vignette or simple framing (done later as HTML, not a redraw).
-- "chart": data, numbers, steps, comparisons, timelines — anything better drawn \
-than photographed.
-- "generate" (AI image): ONLY for shots that genuinely cannot be found or \
-charted (impossible/surreal/specific composite). Use it SPARINGLY — at most one \
+VISUAL TREATMENTS (pick the best per beat, keep the mix varied):
+- "search" — a real stock/internet photo. This is the BACKBONE; the MAJORITY of \
+scenes must be "search". Real photos read as authentic.
+- "photo_edit" — a real stock photo with light polish (overlay text, color grade, \
+vignette, framing) done later as HTML, not a redraw.
+- "chart" — data, numbers, steps, comparisons, timelines, processes, hierarchies: \
+anything better DRAWN than photographed.
+- "text_card" — words as the hero: a punchy quote, one bold statement, a huge \
+number/stat, a definition, a short list, or a section title. Great for hooks, \
+mantras, key takeaways and chapter beats.
+- "generate" (AI image) — ONLY for shots that genuinely cannot be found, charted \
+or set as type (impossible/surreal/specific composite). Use SPARINGLY: at most one \
 in five scenes. Never default to it.
-Keep image_prompt free of on-screen text and narration restatement."""
+
+CAMERA MOTION (animation): give each scene deliberate movement — "auto" (a gentle \
+Ken Burns that alternates per scene), "kenburns-in"/"kenburns-out", \
+"zoom-in"/"zoom-out", "pan-left"/"pan-right"/"pan-up"/"pan-down" (good for wide \
+scenery / reveals), or "static" (no move — best for a clean text_card or chart). \
+Vary the motion across neighbouring scenes.
+
+TRANSITIONS (into the scene): "cut" (energetic, punchy), "fade"/"dissolve" \
+(smooth, reflective), "fadeblack"/"fadewhite" (a beat / chapter break), \
+"slide-*"/"wipe-*" (directional momentum), "zoom"/"circle" (dramatic). Match the \
+transition to the pacing of the beat; the first scene is always a "cut".
+
+Keep image_prompt free of on-screen text and narration restatement (text_card and \
+chart handle their own words)."""
 
 
 def _art_user(script: str, target_seconds: float, style: str, channel_profile: str = "") -> str:
@@ -102,8 +123,11 @@ def _art_director(script: str, cfg: dict, llm: LLM, channel_profile: str = "") -
     wps = float(pcfg.get("words_per_second", 2.5))
     target_seconds = pcfg.get("target_scene_seconds", 8)
     style = (pcfg.get("image_style") or "").strip()
+    sys_prompt = _ART_SYSTEM.format(
+        animations=" | ".join(f'"{a}"' for a in ANIMATIONS),
+        transitions=" | ".join(f'"{t}"' for t in TRANSITIONS))
     raw = _agent_llm(cfg, "art_director", llm).complete(
-        _ART_SYSTEM, _art_user(script, target_seconds, style, channel_profile),
+        sys_prompt, _art_user(script, target_seconds, style, channel_profile),
         temperature=_agent_temp(cfg, "art_director", 0.6))
     data = extract_json(raw)
     if not isinstance(data, list) or not data:
@@ -119,11 +143,18 @@ def _art_director(script: str, cfg: dict, llm: LLM, channel_profile: str = "") -
         vtype = (item.get("visual_type") or "search").strip().lower()
         if vtype not in VISUAL_TYPES:
             vtype = "search"
+        anim = (item.get("animation") or "auto").strip().lower().replace("_", "-")
+        if anim not in ANIMATIONS:
+            anim = "auto"
+        trans = (item.get("transition") or "").strip().lower().replace("_", "-")
+        if trans not in TRANSITIONS:
+            trans = ""
         prompt = (item.get("image_prompt") or "").strip()
         if style and style.lower() not in prompt.lower():
             prompt = f"{prompt}. {style}" if prompt else style
         scenes.append(Scene(
             id=i, text=text, image_prompt=prompt, visual_type=vtype,
+            animation=anim, transition=("cut" if i == 1 and not trans else trans),
             est_duration_sec=round(len(text.split()) / wps, 1) if wps else 0.0,
             notes=(item.get("visual_reason") or "").strip(),
         ))

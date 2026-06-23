@@ -182,6 +182,7 @@
   .vtag.chart{color:var(--cyan);border-color:rgba(70,200,245,.32);background:rgba(70,200,245,.08)}
   .vtag.photo_edit{color:var(--primary2);border-color:rgba(200,125,255,.32);background:rgba(200,125,255,.08)}
   .vtag.search{color:var(--teal);border-color:rgba(52,211,153,.32);background:rgba(52,211,153,.08)}
+  .vtag.text_card{color:#f7a8d8;border-color:rgba(244,114,182,.32);background:rgba(244,114,182,.08)}
   audio{width:100%;margin-top:10px;height:34px}
   .scene-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
 
@@ -624,6 +625,11 @@ function renderScene(s,i){
   const vosel=el('select',{onchange:()=>patchScene(s.id,{voice:vosel.value})});
   vosel.append(el('option',{value:'',textContent:'(project voice)',selected:!s.voice}));
   (CFG.voices||[]).forEach(v=>vosel.append(el('option',{value:v.id,textContent:v.label+(v.gender?' · '+v.gender:''),selected:v.id===s.voice})));
+  const asel=el('select',{onchange:()=>patchScene(s.id,{animation:asel.value})});
+  (CFG.animations||['auto']).forEach(a=>asel.append(el('option',{value:a,textContent:a,selected:a===(s.animation||'auto')})));
+  const tsel=el('select',{onchange:()=>patchScene(s.id,{transition:tsel.value})});
+  tsel.append(el('option',{value:'',textContent:'(default)',selected:!s.transition}));
+  (CFG.transitions||[]).forEach(t=>tsel.append(el('option',{value:t,textContent:t,selected:t===s.transition})));
   const left=el('div',{className:'vis'},img,
     el('div',{className:'row',style:'margin-top:6px'},el('span',{className:'vtag '+s.visual_type,textContent:s.visual_type}),
       s.image_source?el('span',{className:'pill',textContent:s.image_source}):null),
@@ -636,6 +642,7 @@ function renderScene(s,i){
         el('button',{className:'danger xs ghost',textContent:'✕',onclick:async()=>{const slug=p.slug;await api.del(`/api/projects/${slug}/scenes/${s.id}`);if(CUR&&CUR.slug===slug)openProject(slug);}}))),
     el('label',{textContent:'narration'}),text,
     el('div',{className:'grid2'},wrap('visual_type',vsel),wrap('voice',vosel)),
+    el('div',{className:'grid2'},wrap('animation (motion)',asel),wrap('transition (in)',tsel)),
     el('label',{textContent:'delivery'}),deliv,
     el('label',{textContent:'image prompt'}),prompt,
     s.notes?el('div',{className:'pill',style:'margin-top:6px',textContent:'note: '+s.notes}):null,

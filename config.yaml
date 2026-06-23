@@ -135,11 +135,18 @@ montage:
   fps: 30
   background: black              # letterbox/pad color for off-aspect images
   fallback_scene_seconds: 4      # used when a scene has no audio and no estimate
-  # Ken Burns: slow zoom on each still (alternating in/out) so the video isn't a
-  # static slideshow. Fills the frame (crops to cover; no letterbox). Set false
-  # to keep the letterboxed static look instead.
+  # Camera motion on each still (per-scene via scene.animation: auto / kenburns-in
+  # / kenburns-out / zoom-in / zoom-out / pan-left|right|up|down / static). "auto"
+  # alternates a slow Ken Burns zoom. ken_burns is the global on/off; set false for
+  # a letterboxed static slideshow.
   ken_burns: true
   ken_burns_zoom: 0.12           # max zoom fraction over a scene (0.12 = +12%)
+  # Scene-to-scene transitions (per-scene via scene.transition: cut / fade /
+  # fadeblack / fadewhite / dissolve / slide-* / wipe-* / zoom / circle), realized
+  # with ffmpeg xfade. transitions=false keeps fast hard-cut concatenation.
+  transitions: true
+  transition_seconds: 0.5        # crossfade length at each scene boundary
+  default_transition: fade       # used when a scene doesn't specify one ("cut" = hard cuts)
   # ffmpeg_binary: ffmpeg        # or an absolute path
   # --- sound design (the `audiomix` step, runs after montage) ---
   # Realize the Sound Designer's blueprint: synth + mix each scene's SFX cues and

@@ -49,11 +49,12 @@ from .modules.strategist import (channel_edit_turn, channel_setup_turn, chat_rep
 from .modules.humanizer import humanize_text
 from .modules.imagegen import generate_project
 from .modules.images import fetch_project
-from .modules.montage import build_video
+from .modules.montage import ANIMATIONS, TRANSITIONS, build_video
 from .modules.parser import parse_script
 from .modules.photo_edit import photo_edit_project
 from .modules.scriptgen import brainstorm_ideas, write_script
 from .modules.thumbnail import make_thumbnail
+from .modules.textcard import textcard_project
 from .modules.tts import synthesize_project
 from .modules.visuals import realize_visuals
 from .providers.voices import list_voices
@@ -306,11 +307,13 @@ def get_config():
             "target_seconds": sg.get("target_seconds", 60),
             "aspect": "16:9",
         },
-        "image_modes": ["search", "generate", "chart", "photo_edit"],
-        "visual_types": ["search", "photo_edit", "chart", "generate", "animation"],
+        "image_modes": ["search", "generate", "chart", "photo_edit", "text_card"],
+        "visual_types": ["search", "photo_edit", "chart", "text_card", "generate", "animation"],
+        "animations": list(ANIMATIONS),                # per-scene camera moves
+        "transitions": list(TRANSITIONS),              # scene-to-scene transitions
         "create_modes": ["director", "topic", "idea", "script", "batch"],
         "steps": ["humanize", "parse", "tts", "visuals", "images", "imagegen",
-                  "chart", "photo_edit", "montage", "audiomix", "thumbnail"],
+                  "chart", "text_card", "photo_edit", "montage", "audiomix", "thumbnail"],
         "tts_providers": ["auto", "elevenlabs", "ai33", "piper"],
         "voices": list_voices(CFG),
         "director_agents": list(CFG.get("director", {}).get(
@@ -526,6 +529,8 @@ def run_step(slug: str, step: str, body: dict = Body(default={})):
             generate_project(p, cfg, force=force, only=only)
         elif step == "chart":
             chart_project(p, cfg, force=force, only=only)
+        elif step == "text_card":
+            textcard_project(p, cfg, force=force, only=only)
         elif step == "photo_edit":
             photo_edit_project(p, cfg, force=force, only=only)
         elif step == "visuals":

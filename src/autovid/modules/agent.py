@@ -35,8 +35,22 @@ Rules you always follow:
 - Honor the CHANNEL PROFILE if one is given (voice, rules, visual style, the
   recurring intro/sign-off/CTA).
 - When splitting a script into scenes, keep the narration VERBATIM.
-- Keep at most ~20% of scenes AI-generated ("generate"); prefer "search" (real
-  stock photo), "photo_edit" (stock photo + light edit) or "chart".
+- Always design with the FULL visual toolbox below and keep the mix VARIED — a
+  video should never be all one look or one motion.
+
+VISUAL TOOLBOX (you can set these per scene via edit_scene):
+- visual_type — how the still is MADE:
+  "search" (real stock photo; the BACKBONE / most scenes) · "photo_edit" (stock
+  photo + light HTML polish) · "chart" (data/steps/comparison/timeline drawn) ·
+  "text_card" (words as hero: quote, big stat, definition, list, title card) ·
+  "generate" (AI image — SPARINGLY, at most ~20% of scenes; never the default).
+- animation — the camera MOVE: "auto" (gentle alternating Ken Burns) ·
+  "kenburns-in"/"kenburns-out" · "zoom-in"/"zoom-out" ·
+  "pan-left"/"pan-right"/"pan-up"/"pan-down" · "static" (no move; best for
+  text_card / chart).
+- transition — how a scene ENTERS: "cut" · "fade"/"dissolve" ·
+  "fadeblack"/"fadewhite" · "slide-left/right/up/down" · "wipe-left/right/up/down"
+  · "zoom" · "circle". Match it to the pacing.
 
 Output ONLY JSON: {"reply": "<short reply>", "actions": [ <action>, ... ]}.
 Emit actions ONLY for concrete changes the creator asked for; otherwise [].
@@ -44,9 +58,9 @@ Emit actions ONLY for concrete changes the creator asked for; otherwise [].
 Actions:
 - {"tool":"generate_script","topic":"..."}   write the full narration from a topic/brief (clears scenes)
 - {"tool":"rewrite","instruction":"..."}     rewrite the current script per the instruction
-- {"tool":"blueprint","topic":"..."}         run the FULL director at once (script+scenes+voice+sound). Use when they want "make the whole thing".
-- {"tool":"split_scenes"}                     split the current script into scenes + visual types
-- {"tool":"edit_scene","id":N,"text":"...","visual_type":"search|photo_edit|chart|generate","voice":"...","delivery":"...","image_prompt":"..."}  (include only the fields to change)
+- {"tool":"blueprint","topic":"..."}         run the FULL director at once (script+scenes+visuals+motion+voice+sound). Use when they want "make the whole thing".
+- {"tool":"split_scenes"}                     split the current script into scenes + full visual treatment
+- {"tool":"edit_scene","id":N,"text":"...","visual_type":"search|photo_edit|chart|text_card|generate","animation":"<see toolbox>","transition":"<see toolbox>","voice":"...","delivery":"...","image_prompt":"..."}  (include only the fields to change)
 - {"tool":"set_project","title":"...","voice":"...","music":"...","aspect":"16:9|9:16"}
 - {"tool":"run","step":"visuals|voice|montage|audiomix|thumbnail|all"}   produce assets / render the video
 """
@@ -62,7 +76,9 @@ def _state_summary(project, channel_profile: str) -> str:
         lines.append(f"SCENES ({len(project.scenes)}):")
         for s in project.scenes[:30]:
             v = f" voice={s.voice}" if s.voice else ""
-            lines.append(f"  {s.id} [{s.visual_type}]{v}: {s.text[:60]}")
+            mo = f"/{s.animation}" if s.animation and s.animation != "auto" else ""
+            tr = f" >{s.transition}" if s.transition else ""
+            lines.append(f"  {s.id} [{s.visual_type}{mo}]{tr}{v}: {s.text[:60]}")
     else:
         lines.append("SCENES: (none yet)")
     lines.append(f"voice={project.voice or '(default)'} | music={project.music or '(none)'} | "
@@ -163,7 +179,8 @@ def run_agent(project, messages, cfg, *, channel_profile="", channel_signature="
                 if not sc:
                     r = f"no scene {a.get('id')}"
                 else:
-                    for k in ("text", "image_prompt", "visual_type", "voice", "delivery", "music", "notes"):
+                    for k in ("text", "image_prompt", "visual_type", "animation",
+                              "transition", "voice", "delivery", "music", "notes"):
                         if a.get(k) is not None:
                             setattr(sc, k, a[k])
                     r = f"edited scene {sc.id}"

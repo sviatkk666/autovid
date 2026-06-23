@@ -42,9 +42,12 @@ margin:0, overflow:hidden.
 - Inline CSS and inline SVG ONLY. NO external resources of any kind (no <img>, \
 no web fonts, no URLs) — it must render fully offline. Use system fonts \
 (Arial/Helvetica/sans-serif), CSS gradients, SVG shapes/paths, and emoji.
-- Choose the visual that best fits the beat: if the narration has concrete \
-numbers, chart them honestly (bar/line/pie/progress); otherwise make a clean \
-conceptual diagram (flow, steps, comparison, hierarchy, labelled illustration).
+- Choose the visual that best fits the beat from a WIDE repertoire — vary it across \
+the video: bar / column / line / area / pie or donut / progress or gauge / \
+scatter; or a conceptual diagram — flowchart, step/process, timeline, comparison \
+or VS split, before/after, hierarchy / pyramid, Venn, quadrant / 2x2 matrix, \
+mind-map, cycle, funnel, labelled illustration, or a big-number stat block. If the \
+narration has concrete numbers, chart them honestly; otherwise draw the structure.
 - Cinematic and high-contrast, full-bleed background suited to video. ONE focal \
 visual with minimal, large, legible text — not a slide full of bullet points.
 - Do NOT restate the narration as a paragraph. Visualize it."""

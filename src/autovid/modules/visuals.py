@@ -4,13 +4,16 @@ The director's Art Director tags every scene with a `visual_type`. This module
 "decodes" that: it groups scenes by type and calls the right maker once per
 group (so providers are built once, not per scene):
 
-  search      -> images.fetch_project        (real stock/internet photo)
-  photo_edit  -> photo_edit.photo_edit_project (stock photo + light HTML polish)
-  chart       -> chartgen.chart_project        (LLM HTML/SVG data-viz)
-  generate    -> imagegen.generate_project     (AI image; kept <=20% by director)
-  animation   -> (no renderer yet) falls back to a stock photo
+  search      -> images.fetch_project          (real stock/internet photo)
+  photo_edit  -> photo_edit.photo_edit_project  (stock photo + light HTML polish)
+  chart       -> chartgen.chart_project         (LLM HTML/SVG data-viz)
+  text_card   -> textcard.textcard_project      (LLM typographic quote/stat card)
+  generate    -> imagegen.generate_project      (AI image; kept <=20% by director)
+  animation   -> (motion lives in montage via scene.animation) falls back to a stock photo
 
-All makers fill the same scene.image_path slot, so montage is unchanged.
+All makers fill the same scene.image_path slot, so montage is unchanged. (Per-scene
+camera MOTION — Ken Burns / pans / zooms — and scene-to-scene TRANSITIONS are a
+separate axis applied by montage from scene.animation / scene.transition.)
 
 Entry point: realize_visuals(project, cfg, force=False, only=None) -> Project
 """
@@ -25,13 +28,15 @@ from .chartgen import chart_project
 from .imagegen import generate_project
 from .images import fetch_project
 from .photo_edit import photo_edit_project
+from .textcard import textcard_project
 
-# visual_type -> (maker function, label). animation has no realizer yet, so it
-# degrades to a real photo (the safe, on-policy default).
+# visual_type -> maker function. "animation" is not a still-maker (motion is applied
+# by montage), so it degrades to a real photo (the safe, on-policy default).
 _MAKERS = {
     "search": fetch_project,
     "photo_edit": photo_edit_project,
     "chart": chart_project,
+    "text_card": textcard_project,
     "generate": generate_project,
     "animation": fetch_project,
 }
