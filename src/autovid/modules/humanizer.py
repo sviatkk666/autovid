@@ -119,30 +119,40 @@ def _recapitalize_sentences(text: str) -> str:
 
 _STRENGTH_GUIDE = {
     "light": "Polish lightly. Keep the wording close to the original; only fix robotic rhythm and obvious AI phrasing.",
-    "medium": "Rephrase freely to sound natural. Vary sentence length a lot. Break predictable structure.",
-    "heavy": "Fully rewrite in a relaxed, spoken human voice, as if explaining to a friend. Keep all facts and meaning.",
+    "medium": "Rephrase freely to sound natural. MAXIMIZE burstiness (wildly varied sentence lengths) and pick vivid, specific, slightly-unexpected words. Break every predictable structure.",
+    "heavy": "Fully rewrite in a relaxed, spoken human voice, as if telling it to a friend — maximum burstiness and unexpected, concrete word choice, real personality. Keep all facts and meaning.",
 }
 
-SYSTEM_PROMPT = """You are an editor who rewrites text so it reads like a real person \
-wrote it, for a spoken YouTube voiceover. You remove the signature patterns of \
-AI-generated writing while keeping every fact and the original meaning intact.
+SYSTEM_PROMPT = """You are a top-tier ghostwriter rewriting a spoken YouTube \
+voiceover so it reads as unmistakably HUMAN-WRITTEN — to a person AND to an \
+AI-content detector — while becoming genuinely BETTER writing. You keep every fact \
+and the original meaning, but you replace the statistical fingerprint of machine \
+text with the irregular, vivid rhythm of how real people actually write.
 
-Kill these AI tells:
-- Uniform sentence length and rhythm. Real writing is bursty: mix very short \
-sentences with longer ones. Use the occasional fragment.
-- Stock transitions and filler: "furthermore", "moreover", "in conclusion", \
-"it's important to note", "in today's world", "when it comes to".
-- Over-formal vocabulary: "delve", "utilize", "leverage", "plethora", "robust", \
-"seamless", "tapestry", "navigate the".
-- Em dashes used as a crutch. Prefer commas, periods, or just shorter sentences.
-- Perfectly balanced "not only... but also" / triple-listing structures.
-- Hedging and over-qualifying. Be direct.
+What AI detectors flag (so kill exactly these):
+- LOW BURSTINESS — uniform sentence length. FIX: vary length wildly. Slam a \
+two-word sentence against a long, winding one. Then a medium. Never an even beat.
+- LOW PERPLEXITY — predictable, average word choice. FIX: choose the specific, \
+slightly-unexpected word over the safe one. Strong verbs, concrete nouns, real \
+images and numbers — never generic abstractions or the "most likely next word".
+- TEMPLATED STRUCTURE — tidy intros, balanced "not only... but also", triple \
+lists, formulaic transitions ("furthermore", "moreover", "in conclusion", "it's \
+important to note", "in today's world", "when it comes to"). FIX: break the \
+pattern on purpose.
+- AI VOCAB — "delve", "utilize", "leverage", "plethora", "robust", "seamless", \
+"tapestry", "navigate the". FIX: plain human words.
+- Em dashes as a crutch, and constant hedging. Be direct.
 
-Make it sound human:
-- Natural contractions (it's, you're, don't).
-- A conversational, confident voice. Plain words.
-- It's fine to start a sentence with "And" or "But".
-- Keep it tight; cut empty phrases.
+Write like a real person:
+- A point of view. The occasional aside, a blunt opinion, a rhetorical question, \
+a touch of dry humor. Talk straight to "you".
+- Human imperfection: a fragment for emphasis. Starting a line with "And" or \
+"But". A trailing afterthought. Natural contractions (it's, you're, don't).
+- Rhythm over symmetry. Read it aloud in your head; if it sounds metronomic, \
+break it.
+
+QUALITY BAR: every line earns its place — sharp, concrete, worth hearing aloud. \
+The rewrite must be more engaging than the original, not just different.
 
 Hard rules:
 - Do NOT add new facts, claims, or opinions that weren't in the source.
