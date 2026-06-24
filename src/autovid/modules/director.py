@@ -289,17 +289,40 @@ def split_and_direct(script: str, cfg: dict, channel_profile: str = "",
     return scenes
 
 
-def enforce_ai_cap(scenes: list[Scene], max_fraction: float = 0.2) -> int:
-    """Demote 'generate' scenes beyond the cap to 'photo_edit'. Returns #demoted."""
-    n = len(scenes)
-    cap = math.floor(n * max_fraction)
-    gens = [s for s in scenes if s.visual_type == "generate"]
-    demoted = 0
-    for s in gens[cap:]:  # keep the first `cap`, demote the rest
-        s.visual_type = "photo_edit"
-        s.notes = (s.notes + " | AI-cap: demoted to photo_edit").strip(" |")
-        demoted += 1
-    return demoted
+def enforce_ai_fraction(scenes: list[Scene], fraction: float = 0.5) -> int:
+    """Steer the photo visuals toward a target share of AI 'generate' (rest = found
+    stock 'search'). Both directions: demote surplus 'generate' to 'search', and
+    promote found scenes to 'generate' when below target — spread across the
+    timeline so AI and stock alternate instead of clustering. chart/text_card are
+    data/typographic and never touched. Returns the resulting #generate.
+
+    fraction is a *target*, not just a ceiling: 0.5 ≈ half generated, half found.
+    """
+    swap = ("search", "photo_edit", "generate")   # the photo-like, swappable pool
+    pool = [s for s in scenes if s.visual_type in swap]
+    if not pool:
+        return 0
+    want = min(len(pool), round(len(scenes) * max(0.0, min(1.0, fraction))))
+    gens = [s for s in pool if s.visual_type == "generate"]
+
+    if len(gens) > want:                       # too many AI → demote surplus to stock
+        for s in gens[want:]:
+            s.visual_type = "search"
+            s.notes = (s.notes + " | AI-ratio: -> search").strip(" |")
+    elif len(gens) < want:                     # too few AI → promote found scenes
+        found = [s for s in pool if s.visual_type != "generate"]
+        need = want - len(gens)
+        step = len(found) / need               # even spread across the timeline
+        picks = {int(i * step) for i in range(need)}
+        for i, s in enumerate(found):
+            if i in picks:
+                s.visual_type = "generate"
+                s.notes = (s.notes + " | AI-ratio: -> generate").strip(" |")
+    return want
+
+
+# Back-compat alias — older call sites / imports used the cap-only name.
+enforce_ai_cap = enforce_ai_fraction
 
 
 # --- Voice & Delivery Director ------------------------------------------------
@@ -450,10 +473,10 @@ def build_blueprint(
     # 3. Art Director (required) — scenes + visual treatment.
     log("[director] art director: shot-listing + visual treatment...")
     scenes = _art_director(final_script, cfg, shared, channel_profile=channel_profile)
-    demoted = enforce_ai_cap(scenes, max_ai)
+    enforce_ai_fraction(scenes, max_ai)
     gen = sum(1 for s in scenes if s.visual_type == "generate")
-    log(f"[director] {len(scenes)} scenes; {gen} AI-generated "
-        f"({demoted} demoted to honor <={int(max_ai*100)}% cap)")
+    log(f"[director] {len(scenes)} scenes; {gen} AI-generated, "
+        f"{len(scenes) - gen} found/other (target ~{int(max_ai*100)}% AI)")
     # Sanity: the art director must keep narration verbatim. Warn loudly if the
     # concatenated scene text drifts materially from the script (lost/added lines).
     _norm = lambda s: " ".join((s or "").split()).lower()

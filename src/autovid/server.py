@@ -328,7 +328,7 @@ def get_config():
         "director_agents": list(CFG.get("director", {}).get(
             "enabled_agents", ["screenwriter", "humanizer", "art_director",
                                "voice_director", "sound_designer", "showrunner"])),
-        "max_ai_fraction": CFG.get("director", {}).get("max_ai_fraction", 0.2),
+        "max_ai_fraction": CFG.get("director", {}).get("max_ai_fraction", 0.5),
     }
 
 

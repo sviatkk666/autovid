@@ -210,13 +210,14 @@ def run_agent(project, messages, cfg, *, channel_profile="", channel_signature="
                     r = "no script to split yet"
                 else:
                     scenes = _art_director(script, cfg, get_llm(cfg, "art_director"), channel_profile=channel_profile)
-                    demoted = enforce_ai_cap(scenes, float(cfg.get("director", {}).get("max_ai_fraction", 0.2)))
+                    enforce_ai_cap(scenes, float(cfg.get("director", {}).get("max_ai_fraction", 0.5)))
                     project.scenes = scenes
                     try:   # this storyline now feeds the channel's content memory
                         memory_store.remember(project)
                     except Exception as e:  # noqa: BLE001
                         log(f"[agent] memory skipped ({e})")
-                    r = f"split into {len(scenes)} scenes ({demoted} AI demoted to honor the cap)"
+                    gen = sum(1 for s in scenes if s.visual_type == "generate")
+                    r = f"split into {len(scenes)} scenes ({gen} AI-generated, {len(scenes) - gen} found)"
 
             elif tool == "edit_scene":
                 sc = project.scene_by_id(int(a.get("id", 0)))
