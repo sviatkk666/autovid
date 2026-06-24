@@ -72,20 +72,25 @@ ANIMATIONS = ("auto", "kenburns-in", "kenburns-out", "zoom-in", "zoom-out",
 
 
 def _motion_filter(animation: str, w: int, h: int, fps: int, duration: float,
-                   zoom: float, index: int) -> str:
+                   zoom: float, index: int, supersample: int = 4) -> str:
     """Build a ffmpeg filter that animates a still image to fill the WxH frame.
 
     Supersamples + crops to cover (no letterbox), then `zoompan` applies the
     requested move: a slow zoom (in/out), a directional pan, or none ("static").
     "auto" alternates zoom in/out per scene for variety. Upscaling first keeps
     the slow motion crisp (zoompan jitters on small inputs).
+
+    `supersample` is the upscale factor before zoompan. zoompan rounds the crop
+    centre to whole INPUT pixels each frame, so the centre holds still then jumps
+    1px — visible shake. A bigger input makes each step sub-pixel after the
+    downscale, so the drift looks smooth. 4x is the smooth default; drop it (e.g.
+    to 2) only if a tiny host OOMs on the larger frames.
     """
     a = (animation or "auto").strip().lower().replace("_", "-").replace("ken-burns", "kenburns")
     frames = max(2, round(duration * fps))
     n1 = max(1, frames - 1)
-    # Supersample 2x so the slow zoom stays crisp. (Was 4x — that buffered ~8K
-    # frames in zoompan and OOM-killed heavy renders on small hosts → HTTP 502.)
-    sw, sh = w * 2, h * 2
+    ss = max(2, int(supersample or 4))
+    sw, sh = w * ss, h * ss
     cover = f"scale={sw}:{sh}:force_original_aspect_ratio=increase,crop={sw}:{sh}"
     inc = zoom / n1
     zin, zout = f"1+{inc:.6f}*on", f"{1 + zoom:.6f}-{inc:.6f}*on"
@@ -151,6 +156,7 @@ def scene_clip_cmd(
     binary: str, image: Path, audio: Path | None, out: Path,
     w: int, h: int, fps: int, bg: str, duration: float,
     motion: bool = False, animation: str = "auto", kb_zoom: float = 0.12, kb_index: int = 0,
+    supersample: int = 4,
 ) -> list[str]:
     """ffmpeg command to render one scene clip (still image + audio/silence).
 
@@ -165,7 +171,7 @@ def scene_clip_cmd(
     cmd += ["-c:v", "libx264", "-preset", "medium"]
     # A truly static still encodes leaner with -tune stillimage; any move does not.
     if motion and (animation or "auto").strip().lower() not in ("static", "none"):
-        vf = _motion_filter(animation, w, h, fps, duration, kb_zoom, kb_index)
+        vf = _motion_filter(animation, w, h, fps, duration, kb_zoom, kb_index, supersample)
     else:
         vf = _fit_filter(w, h, bg)
         cmd += ["-tune", "stillimage"]
@@ -260,6 +266,7 @@ def build_video(
     fallback = float(mcfg.get("fallback_scene_seconds", 4))
     ken_burns = bool(mcfg.get("ken_burns", True))     # global camera-motion toggle
     kb_zoom = float(mcfg.get("ken_burns_zoom", 0.12))
+    supersample = int(mcfg.get("supersample", 4))    # zoompan upscale; lower if a host OOMs
     do_transitions = bool(mcfg.get("transitions", True))
     xd = float(mcfg.get("transition_seconds", 0.5))
     default_transition = str(mcfg.get("default_transition", "fade"))
@@ -310,7 +317,8 @@ def build_video(
               f"+ {'audio' if audio else 'silence'} ({duration:.1f}s, motion={anim}"
               f"{', into=' + trans if trans else ''})", file=sys.stderr)
         _run(scene_clip_cmd(binary, image, audio, clip, w, h, fps, bg, duration,
-                            motion=ken_burns, animation=anim, kb_zoom=kb_zoom, kb_index=kb_i), dry_run)
+                            motion=ken_burns, animation=anim, kb_zoom=kb_zoom, kb_index=kb_i,
+                            supersample=supersample), dry_run)
         clip_paths.append(clip)
         durations.append(duration)
         transitions.append(trans)

@@ -63,9 +63,11 @@ director:
   # prompt + settings) that turn a theme/topic into a full editable production
   # blueprint. Used by the `direct` command and the dashboard "Director" button.
   enabled_agents: [screenwriter, humanizer, art_director, voice_director, sound_designer, showrunner]
-  # Hard cap: at most this fraction of scenes may be AI-generated images. The
-  # rest are real stock photos (search), light HTML edits (photo_edit) or charts.
-  max_ai_fraction: 0.2
+  # Target share of scenes that are AI-generated images; the rest become found
+  # stock photos (search). It's a target, not just a ceiling — the director both
+  # promotes and demotes to hit it. 0.5 = half generated, half found. 0 = all
+  # stock, 1 = all AI. (charts/text_card scenes are never counted or changed.)
+  max_ai_fraction: 0.5
   default_voice: ""        # a voice preference the voice director starts from
   # Per-agent overrides (optional): model + temperature.
   agents:
@@ -157,6 +159,9 @@ montage:
   # a letterboxed static slideshow.
   ken_burns: true
   ken_burns_zoom: 0.12           # max zoom fraction over a scene (0.12 = +12%)
+  supersample: 4                 # zoompan upscale before the zoom; 4 = smooth motion.
+                                 # Lower to 2 only if a small host runs out of memory
+                                 # (smaller frames, but the slow zoom may visibly shake).
   # Scene-to-scene transitions (per-scene via scene.transition: cut / fade /
   # fadeblack / fadewhite / dissolve / slide-* / wipe-* / zoom / circle), realized
   # with ffmpeg xfade. transitions=false keeps fast hard-cut concatenation.
