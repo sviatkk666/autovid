@@ -37,7 +37,11 @@ class AnthropicLLM:
         # accepted here for interface parity with the other providers but not sent.
         resp = self.client.messages.create(
             model=self.model,
-            max_tokens=8192,
+            # Long scripts produce large JSON scene arrays; 8192 truncated them
+            # mid-array, so extract_json fell back to a single object and the
+            # parser raised "not a JSON array". 16000 is the safe non-streaming
+            # ceiling (above it the SDK risks an HTTP timeout).
+            max_tokens=16000,
             system=system,
             messages=[{"role": "user", "content": user}],
         )
