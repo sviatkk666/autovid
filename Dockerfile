@@ -31,5 +31,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Railway injects PORT (8080) and routes its domain to it; bind whatever it sets.
+# Boot: seed demo data / import docs into Postgres (both idempotent), then serve.
 EXPOSE 8080
-CMD ["sh", "-c", "python -m uvicorn autovid.server:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["sh", "-c", "python -m autovid.seed && python -m uvicorn autovid.server:app --host 0.0.0.0 --port ${PORT:-8080}"]

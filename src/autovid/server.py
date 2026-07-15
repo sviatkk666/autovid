@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import copy
 import json
-import shutil
 import sys
 import threading
 import time
@@ -36,7 +35,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import usage
 from .channel import CHANNELS_DIR, Channel
-from .config import DATA_DIR, ROOT, env, load_config
+from .config import DATA_DIR, env, load_config
 from .modules import memory_store
 from .providers.ai33 import ai33_credits
 from .providers.llm import available_models
@@ -334,15 +333,7 @@ def get_config():
 
 @app.get("/api/projects")
 def list_projects():
-    out = []
-    if PROJECTS_DIR.exists():
-        for d in sorted(PROJECTS_DIR.iterdir()):
-            if (d / "project.json").exists():
-                try:
-                    out.append(_project_view(Project.load(d.name), full=False))
-                except Exception:  # noqa: BLE001 — skip an unreadable project
-                    continue
-    return {"projects": out}
+    return {"projects": [_project_view(p, full=False) for p in Project.list()]}
 
 
 @app.get("/api/projects/{slug}")
@@ -354,10 +345,9 @@ def get_project(slug: str):
 def delete_project(slug: str):
     _safe_slug(slug)
     with _slug_lock(slug):
-        d = PROJECTS_DIR / slug
-        if not (d / "project.json").exists():
+        if not Project.exists(slug):
             raise HTTPException(404, f"no project '{slug}'")
-        shutil.rmtree(d, ignore_errors=True)
+        Project.delete(slug)
     return {"ok": True}
 
 
@@ -805,17 +795,7 @@ def _safe_chan(slug: str) -> str:
 
 def _channel_view(ch: Channel) -> dict:
     d = asdict(ch)
-    n = 0
-    if PROJECTS_DIR.exists():
-        for p in PROJECTS_DIR.iterdir():
-            j = p / "project.json"
-            if j.exists():
-                try:
-                    if json.loads(j.read_text(encoding="utf-8")).get("channel") == ch.slug:
-                        n += 1
-                except Exception:  # noqa: BLE001
-                    pass
-    d["n_projects"] = n
+    d["n_projects"] = sum(1 for p in Project.list() if p.channel == ch.slug)
     return d
 
 
@@ -866,21 +846,14 @@ def patch_channel(slug: str, body: dict = Body(...)):
 @app.delete("/api/channels/{slug}")
 def delete_channel(slug: str):
     _safe_chan(slug)
-    d = CHANNELS_DIR / slug
-    if not (d / "channel.json").exists():
+    if not Channel.exists(slug):
         raise HTTPException(404, f"no channel '{slug}'")
     # Release this channel's videos (so they become Unfiled, not orphaned/invisible).
-    if PROJECTS_DIR.exists():
-        for pd in PROJECTS_DIR.iterdir():
-            if (pd / "project.json").exists():
-                try:
-                    p = Project.load(pd.name)
-                    if p.channel == slug:
-                        p.channel = ""
-                        p.save()
-                except Exception:  # noqa: BLE001
-                    pass
-    shutil.rmtree(d, ignore_errors=True)
+    for p in Project.list():
+        if p.channel == slug:
+            p.channel = ""
+            p.save()
+    Channel.delete(slug)
     return {"ok": True}
 
 

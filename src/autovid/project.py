@@ -1,16 +1,20 @@
-"""Central project state, persisted as projects/<slug>/project.json.
+"""Central project state — the project.json document.
 
 Every pipeline stage reads and updates this. A Scene carries everything the
 later stages need: narration text, an image prompt, and produced asset paths.
+
+The document is persisted through `storage` (filesystem by default, PostgreSQL
+when DATABASE_URL is set); the project's media assets always live on disk
+under projects/<slug>/ regardless of backend.
 """
 
 from __future__ import annotations
 
-import json
-import os
+import shutil
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
+from . import storage
 from .config import DATA_DIR
 
 PROJECTS_DIR = DATA_DIR / "projects"
@@ -77,19 +81,14 @@ class Project:
         return self.dir / "project.json"
 
     def save(self) -> Path:
-        self.dir.mkdir(parents=True, exist_ok=True)
-        data = asdict(self)
-        # Atomic write: a concurrent reader (the dashboard) never sees a torn file.
-        tmp = self.json_path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-        os.replace(tmp, self.json_path)
+        self.dir.mkdir(parents=True, exist_ok=True)  # asset dir (audio/images/output)
+        storage.store().put("project", self.slug, asdict(self))
         return self.json_path
 
     @classmethod
-    def load(cls, slug: str) -> "Project":
-        path = PROJECTS_DIR / slug / "project.json"
-        data = json.loads(path.read_text(encoding="utf-8"))
-        # Tolerate older/newer project.json: drop keys the dataclasses don't know.
+    def from_dict(cls, data: dict) -> "Project":
+        # Tolerate older/newer documents: drop keys the dataclasses don't know.
+        data = dict(data)
         sf = {f.name for f in fields(Scene)}
         scenes = [Scene(**{k: v for k, v in s.items() if k in sf})
                   for s in data.pop("scenes", [])]
@@ -97,8 +96,31 @@ class Project:
         return cls(scenes=scenes, **{k: v for k, v in data.items() if k in pf})
 
     @classmethod
+    def load(cls, slug: str) -> "Project":
+        data = storage.store().get("project", slug)
+        if data is None:
+            raise FileNotFoundError(f"no project '{slug}'")
+        return cls.from_dict(data)
+
+    @classmethod
     def exists(cls, slug: str) -> bool:
-        return (PROJECTS_DIR / slug / "project.json").exists()
+        return storage.store().exists("project", slug)
+
+    @classmethod
+    def list(cls) -> list["Project"]:
+        out = []
+        for data in storage.store().all("project"):
+            try:
+                out.append(cls.from_dict(data))
+            except Exception:  # noqa: BLE001 — skip an unreadable project
+                continue
+        return out
+
+    @classmethod
+    def delete(cls, slug: str) -> None:
+        """Remove the document AND the project's asset directory."""
+        storage.store().delete("project", slug)
+        shutil.rmtree(PROJECTS_DIR / slug, ignore_errors=True)
 
     # --- scene editing -------------------------------------------------------
     # scene.id is a STABLE unique key (it names the asset files, e.g.

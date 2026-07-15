@@ -6,16 +6,17 @@ director injects this profile into its agents so every video for the channel
 shares one voice and look, and the content memory is scoped per channel so the
 strategist can analyze "what we've done on THIS channel".
 
-Persisted as channels/<slug>/channel.json, mirroring Project.
+Persisted through `storage` (channels/<slug>/channel.json on the filesystem
+backend, a JSONB row on PostgreSQL), mirroring Project.
 """
 
 from __future__ import annotations
 
-import json
-import os
+import shutil
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
+from . import storage
 from .config import DATA_DIR
 
 CHANNELS_DIR = DATA_DIR / "channels"
@@ -65,33 +66,41 @@ class Channel:
         return self.dir / "channel.json"
 
     def save(self) -> Path:
-        self.dir.mkdir(parents=True, exist_ok=True)
-        tmp = self.json_path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(asdict(self), indent=2, ensure_ascii=False), encoding="utf-8")
-        os.replace(tmp, self.json_path)
+        self.dir.mkdir(parents=True, exist_ok=True)  # asset dir (avatar/banner)
+        storage.store().put("channel", self.slug, asdict(self))
         return self.json_path
 
     @classmethod
-    def load(cls, slug: str) -> "Channel":
-        data = json.loads((CHANNELS_DIR / slug / "channel.json").read_text(encoding="utf-8"))
+    def from_dict(cls, data: dict) -> "Channel":
         known = {f.name for f in fields(cls)}
         return cls(**{k: v for k, v in data.items() if k in known})
 
     @classmethod
+    def load(cls, slug: str) -> "Channel":
+        data = storage.store().get("channel", slug)
+        if data is None:
+            raise FileNotFoundError(f"no channel '{slug}'")
+        return cls.from_dict(data)
+
+    @classmethod
     def exists(cls, slug: str) -> bool:
-        return (CHANNELS_DIR / slug / "channel.json").exists()
+        return storage.store().exists("channel", slug)
 
     @classmethod
     def list(cls) -> list["Channel"]:
         out = []
-        if CHANNELS_DIR.exists():
-            for d in sorted(CHANNELS_DIR.iterdir()):
-                if (d / "channel.json").exists():
-                    try:
-                        out.append(cls.load(d.name))
-                    except Exception:  # noqa: BLE001 — skip an unreadable channel
-                        continue
+        for data in storage.store().all("channel"):
+            try:
+                out.append(cls.from_dict(data))
+            except Exception:  # noqa: BLE001 — skip an unreadable channel
+                continue
         return out
+
+    @classmethod
+    def delete(cls, slug: str) -> None:
+        """Remove the document AND the channel's asset directory."""
+        storage.store().delete("channel", slug)
+        shutil.rmtree(CHANNELS_DIR / slug, ignore_errors=True)
 
     def profile_text(self) -> str:
         """A compact block injected into the director/strategist prompts."""

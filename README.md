@@ -1,11 +1,14 @@
-# autovid — script → video pipeline
+# autovid — multi-agent video studio
 
-Automated pipeline that turns a ready-made script into a finished video:
-humanize the text, voice it, generate visuals, and edit it all together.
+Automated pipeline that turns a topic or a ready-made script into a finished
+video: a team of role-specialized LLM agents plans the production, then the
+pipeline humanizes the text, voices it, generates visuals, and edits it all
+together with ffmpeg — driven from a chat-first web dashboard.
 
 Built as independent modules so each step can be run and inspected on its own,
 then chained into a full pipeline. Hybrid stack: cloud APIs for quality, local
-free tools as a fallback.
+free tools as a fallback. Every provider (LLM, TTS, image search, image gen)
+sits behind one interface, so backends swap via config, not code changes.
 
 ## Pipeline
 
@@ -38,14 +41,15 @@ Screenwriter → Humanizer → Art Director → Voice Director → Sound Designe
 
 The blueprint is the `Scene`/`Project` model enriched with `visual_type`
 (search/photo_edit/chart/generate), `voice`, `delivery`, `sfx[]`, `music`,
-`transition`, `animation`, and notes. **Visual policy:** the Art Director keeps
-**≤20% of scenes AI-generated** (`director.max_ai_fraction`) — the majority are
-real stock photos; a deterministic cap demotes any overflow. A **content memory**
-(`content_memory.json`) lets the agents build a series and avoid repeats.
+`transition`, `animation`, and notes. **Visual policy:** the Art Director
+targets a configurable AI/stock image ratio (`director.max_ai_fraction`,
+default 50/50; override per channel) and a deterministic pass enforces it.
+A **content memory** (`content_memory.json`, embedding-ranked) lets the agents
+build a series and avoid repeats.
 
 **Four visual treatments** fill the same image slot:
 `search` (stock photo) · `photo_edit` (stock photo + a light Claude HTML edit) ·
-`chart` (LLM HTML/SVG data-viz) · `generate` (AI image, used sparingly).
+`chart` (LLM HTML/SVG data-viz) · `generate` (AI image).
 
 **Sound design** (`audiomix`, after montage): the Sound Designer's per-scene SFX
 cues and music mood get realized into audio — SFX are **synthesized with ffmpeg**
@@ -178,12 +182,14 @@ for Piper `.wav`; for ElevenLabs `.mp3` if `mutagen` is installed).
 
 TTS backend (pick one):
 - **Cloud:** set `ELEVENLABS_API_KEY` in `.env` (voice/model in `config.yaml`).
-- **Gateway:** set `AI33_API_KEY` to use [ai33.pro](https://ai33.pro), an
-  ElevenLabs-compatible voice gateway (`tts.provider: ai33`).
 - **Local/free:** install [Piper](https://github.com/rhasspy/piper) and set
   `tts.piper_model` to a `.onnx` voice file.
 
-`tts.provider: auto` prefers ElevenLabs, then ai33.pro, else Piper.
+`tts.provider: auto` prefers ElevenLabs, else Piper. The
+[ai33.pro](https://ai33.pro) gateway is **images-only** now: its public v1
+text-to-speech endpoint is sunset and v3 rejects the public API key, so it is
+never auto-selected for voice (set `tts.provider: ai33` manually only if you
+have a v3-capable token).
 
 ## Usage — images (step 4)
 
@@ -302,27 +308,76 @@ Flags: `--no-humanize`, `--no-tts`, `--images search|generate`, `--thumbnail`,
 `--image-provider`, `--tts-provider`, `--title/--slug/--aspect`, `--force`,
 `--dry-run`.
 
+## Storage: filesystem or PostgreSQL
+
+Channel and Project **metadata** (the JSON documents) go through one small
+store interface (`src/autovid/storage.py`) with two backends:
+
+- **Filesystem** (default, zero setup): `channels/<slug>/channel.json`,
+  `projects/<slug>/project.json` under `DATA_DIR`.
+- **PostgreSQL** — set `DATABASE_URL` and the same documents live in JSONB
+  tables (`channels`, `projects`); `projects.channel` is a real indexed column.
+
+**Media assets** (audio, images, video) always stay on the filesystem under
+`DATA_DIR` — they're big, streamed by the web server, and consumed by ffmpeg.
+So a hosted deploy is: Postgres for metadata + a mounted volume for media.
+
+`python -m autovid.seed` (run automatically on container boot) is idempotent:
+it downloads a demo bundle into `DATA_DIR` if `SEED_URL` is set, and imports
+any filesystem documents into Postgres *only where missing* — dashboard edits
+are never overwritten, and it doubles as an FS→Postgres migration tool.
+
+## Deploying (Railway or any Docker host)
+
+The `Dockerfile` ships everything the pipeline needs: ffmpeg, headless
+Chromium (HTML→PNG charts/thumbnails), and Piper with two voices for free
+local TTS. On Railway:
+
+1. Create a service from this repo (it builds the Dockerfile).
+2. Add a **PostgreSQL** database and reference its `DATABASE_URL`.
+3. Mount a **volume** at `/data` and set `DATA_DIR=/data`.
+4. Optionally set `SEED_URL` to a demo-bundle tarball, and provider API keys
+   (without keys the dashboard is a read-only tour of seeded content —
+   generation steps explain what's missing instead of crashing).
+
+## Tests
+
+```bash
+pip install pytest && pytest            # storage contract, models, text utils
+```
+
+The PostgreSQL backend tests run when `PG_TEST_URL` points at a database
+(CI spins up a `postgres:16` service and runs both backends on every push).
+
 ## Layout
 
 ```
 config.yaml              global config (per-module sections)
 scripts/                 input scripts
+tests/                   pytest suite (storage contract, models, text utils)
 src/autovid/
-  config.py              loads config.yaml + .env
-  cli.py                 command-line entry
+  config.py              loads config.yaml + .env; DATA_DIR resolution
+  cli.py                 command-line entry (every step + `run` + `serve`)
+  server.py              FastAPI dashboard: jobs, chat agents, editing API
+  storage.py             metadata store: filesystem (default) / PostgreSQL
+  seed.py                idempotent boot seeding (demo bundle + FS->PG import)
+  project.py             Project/Scene state (documents via storage.py)
+  channel.py             Channel profiles (documents via storage.py)
   providers/llm.py       Anthropic / OpenAI / Ollama behind one interface
   providers/tts.py       ElevenLabs / ai33.pro / Piper behind one interface
   providers/ai33.py      ai33.pro async task gateway (shared by tts + imagegen)
   providers/images.py    Openverse / Wikimedia / Pexels / Pixabay / Archive
-  providers/imagegen.py  OpenAI / Flux / Stability / local Stable Diffusion
+  providers/imagegen.py  OpenAI / Flux / Stability / ai33 / local SD
+  modules/director.py    the six-agent blueprint builder
+  modules/strategist.py  channel setup / director chat agents
   modules/humanizer.py   step 1
   modules/parser.py      step 2
   modules/tts.py         step 3
   modules/images.py      step 4 (search/download)
   modules/imagegen.py    step 4b (AI generation)
-  modules/montage.py     step 5 (ffmpeg)
+  modules/montage.py     step 5 (ffmpeg: Ken Burns, transitions, concat)
+  modules/audiomix.py    SFX synthesis + music bed mixing
   modules/thumbnail.py   HTML thumbnail -> PNG (headless Chrome)
-  cli.py `run`           whole pipeline, script -> mp4
 ```
 
 ## Status
@@ -336,3 +391,7 @@ src/autovid/
 - [x] Step 5: montage (ffmpeg — images + audio → mp4)
 - [x] `run` — all-in-one pipeline command (script → mp4)
 - [x] Thumbnail — LLM designs HTML poster → PNG (headless Chrome)
+- [x] Director — six-agent blueprint (screenwriter → … → showrunner) + channels
+- [x] Web dashboard — chat-first producer/strategist agents + manual controls
+- [x] Storage backends — filesystem / PostgreSQL behind one interface
+- [x] CI — pytest (both storage backends) + ruff on every push

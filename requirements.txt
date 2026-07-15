@@ -28,6 +28,11 @@ mutagen>=1.47            # read mp3 duration (wav uses the stdlib)
 fastapi>=0.110
 uvicorn>=0.27
 
+# Metadata store: PostgreSQL backend, used when DATABASE_URL is set (the default
+# filesystem backend needs nothing). psycopg 3 + its connection pool.
+psycopg[binary]>=3.1
+psycopg-pool>=3.2
+
 # Charts / photo_edit / thumbnails render HTML->PNG with headless Chrome (no pip
 # package — needs a Chrome/Chromium binary on PATH, or set thumbnail.chrome_binary).
 

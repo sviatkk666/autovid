@@ -24,8 +24,6 @@ Entry point: build_blueprint(brief, cfg, idea=None, seconds=None) -> Project
 
 from __future__ import annotations
 
-import copy
-import math
 import re
 
 from ..project import Project, Scene

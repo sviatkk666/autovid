@@ -16,7 +16,6 @@ Entry point: chart_project(project, cfg, force=False, only=None) -> Project
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 from ..providers.llm import get_llm
 from ..project import Project
