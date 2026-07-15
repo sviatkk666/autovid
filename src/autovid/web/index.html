@@ -897,6 +897,7 @@ function renderChannel(){
       el('button',{className:'danger sm ghost',textContent:'delete',onclick:async()=>{
         if(confirm('Delete channel '+ch.slug+'? (its videos become Unfiled)')){await api.del('/api/channels/'+ch.slug);CURCH=null;history.replaceState(null,'','#');await refreshProjects();refreshChannels();renderHome();}}}))));
   m.append(videoBoard(proj));
+  m.append(renderMemoryPanel(ch.slug));
 
   const settings=el('details',{className:'block'});
   settings.append(el('summary',{textContent:'⚙ Channel settings — edit by chat, profile & brainstorm'}));
@@ -953,6 +954,39 @@ function renderChat(){
   log.scrollTop=log.scrollHeight;
 }
 async function sendToProduction(brief){ await createProject({mode:'director',channel:CURCH.slug,topic:brief,aspect:CURCH.aspect,niche:CURCH.niche}); }
+// Content Memory (RAG): the semantic corpus the strategist reads before writing.
+// It embeds every past video and recalls the relevant ones so the channel builds
+// a series and never repeats itself. This panel shows the raw records so the
+// retrieval is tangible, not hidden inside a prompt.
+function renderMemoryPanel(slug){
+  const d=el('details',{className:'block'});
+  d.append(el('summary',{textContent:'🧠 Content Memory (RAG) — what the strategist recalls for this channel'}));
+  const body=el('div',{className:'body'}); d.append(body);
+  body.append(el('p',{className:'muted',style:'margin:0 0 10px',
+    textContent:'Each past video is embedded; the director chat retrieves the most relevant ones (cosine similarity) and folds them into its prompt so it avoids repeats and builds on the series.'}));
+  const holder=el('div',{textContent:'Loading…',className:'muted'}); body.append(holder);
+  d.addEventListener('toggle',async()=>{
+    if(!d.open||d.dataset.loaded)return; d.dataset.loaded='1';
+    try{
+      const {records}=await api.get('/api/memory');
+      const mine=(records||[]).filter(r=>(r.channel||'')===slug);
+      holder.innerHTML='';
+      if(!mine.length){holder.textContent='No memory yet for this channel.';return;}
+      holder.className=''; holder.append(el('div',{className:'pill',style:'margin-bottom:10px',
+        textContent:`${mine.length} embedded record${mine.length===1?'':'s'} · dim ${(mine.find(r=>r.vec)||{vec:[]}).vec.length||'—'}`}));
+      mine.forEach(r=>{
+        const c=el('div',{className:'card',style:'margin-bottom:8px'});
+        c.append(el('b',{textContent:r.title||'(untitled)'}));
+        if(r.angle) c.append(el('div',{className:'muted',style:'font-size:12px;margin-top:2px',textContent:r.angle}));
+        if(r.summary) c.append(el('div',{style:'font-size:12px;margin-top:6px;opacity:.85',textContent:r.summary}));
+        c.append(el('div',{className:'pill',style:'margin-top:8px',
+          textContent:(r.vec&&r.vec.length?'✓ embedded':'no vector')+(r.n_scenes?` · ${r.n_scenes} scenes`:' · concept')}));
+        holder.append(c);
+      });
+    }catch(e){ holder.textContent='error: '+e.message; }
+  });
+  return d;
+}
 async function draftChannel(){
   const slug=CURCH.slug; const btn=$('#draftbtn'); if(btn){btn.disabled=true;btn.textContent='✦ drafting…';}
   try{ await runJob(await api.post('/api/channels/'+slug+'/draft',{}),'draft channel'); if(CURCH&&CURCH.slug===slug) await openChannel(slug); }

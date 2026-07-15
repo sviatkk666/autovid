@@ -31,7 +31,11 @@ memory:
   # most RELEVANT ones (semantic) when writing a new video, not just recent ones.
   # embed_provider: auto | openai | ollama | hash
   #   auto = OpenAI (if OPENAI_API_KEY) → local Ollama (if up) → offline hash fallback.
-  embed_provider: auto
+  # Pinned to `hash`: a deterministic, dependency-free embedder so semantic recall
+  # works identically on every host (no external embedding API to rate-limit, bill,
+  # or drift) — the query-time and index-time vectors always share one space.
+  # Switch to `auto`/`openai`/`ollama` for higher-quality neural embeddings.
+  embed_provider: hash
   openai_embed_model: text-embedding-3-small
   ollama_embed_model: nomic-embed-text   # needs `ollama pull nomic-embed-text`
 

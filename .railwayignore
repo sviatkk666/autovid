@@ -1,0 +1,23 @@
+# Keep `railway up` uploads lean — none of this belongs in the build context
+# (the app fetches demo media at boot via SEED_URL; secrets never leave local).
+.git
+.venv
+venv
+projects
+channels
+content_memory.json
+usage.json
+settings.json
+YT Scripts*
+scripts/*/
+*.mp4
+*.wav
+*.mp3
+.env
+.env.*
+__pycache__
+tests/testimony
+CLAUDE.md
+PLAN.md
+claude-code-build-prompts.md
+src/autovid/testimony
