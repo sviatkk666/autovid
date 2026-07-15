@@ -65,6 +65,7 @@ def generate_project(
     # Persist after each success so a long batch that's interrupted keeps its
     # finished scenes (idempotent: a re-run skips scenes that already have an image).
     failures: list[int] = []
+    produced = 0
 
     for scene in project.scenes:
         if only is not None and scene.id not in only:
@@ -94,13 +95,21 @@ def generate_project(
         scene.image_attribution = ""
         scene.image_credit_url = ""
         project.save()
+        produced += 1
         print(f"[imagegen] scene {scene.id}: {scene.image_path} [{generator.name}]",
               file=sys.stderr)
 
     _write_credits(project)
     if failures:
-        # Surface unfinished scenes so a caller (or the "fill missing visuals"
-        # button) can target just these on the next pass.
-        raise RuntimeError(f"imagegen: {len(failures)} scene(s) still missing an "
-                           f"image after retries: {failures}")
+        # Keep the run CONTINUOUS: a scene that exhausted its retries keeps its
+        # prior image (montage skips a truly imageless scene), so one flaky
+        # generation never aborts the whole production. Only a total outage —
+        # nothing produced at all — is worth raising, since that means the
+        # generator is down and every scene would be missing.
+        msg = (f"imagegen: {len(failures)} scene(s) failed after {attempts} "
+               f"attempts: {failures}")
+        if produced == 0:
+            raise RuntimeError(msg + " — image generation appears to be down")
+        print(f"[imagegen] WARNING: {msg}; kept prior images, continuing",
+              file=sys.stderr)
     return project
