@@ -120,6 +120,12 @@ images:
   #                               to PNG with headless Chrome (uses the `llm` +
   #                               `thumbnail.chrome_binary` settings). Best for
   #                               data/steps/comparison beats.
+  # generate_all: make EVERY scene's frame an AI-generated image (via the
+  # generate.provider below) and skip stock/internet search entirely. One
+  # code path with per-scene retry, so a batch run stays continuous even when
+  # the gateway hiccups. Set false to let the Art Director mix search / charts /
+  # cards / generate per scene instead.
+  generate_all: true
   # --- search ---
   # provider: auto | openverse | wikimedia | pexels | pixabay | internet_archive
   # auto = Pexels/Pixabay if a key is set, else Openverse (no key, license-aware).
@@ -136,8 +142,12 @@ images:
     # provider: auto | openai | flux | stability | ai33 | local
     # auto = OpenAI → Flux (REPLICATE_API_TOKEN) → Stability (STABILITY_API_KEY)
     #        → ai33.pro (AI33_API_KEY) → local SD WebUI if reachable.
-    provider: auto
+    provider: ai33
     prompt_from: image_prompt    # image_prompt | text
+    # Retry each image on transient gateway failures (soft rate-limits, slow
+    # tasks, 5xx) before giving up — keeps generate_all runs gap-free.
+    max_retries: 5               # attempts per scene (exponential backoff between)
+    retry_backoff: 5.0           # seconds; doubles each retry (5s, 10s, 20s, …)
     openai_model: gpt-image-1    # or dall-e-3
     flux_model: black-forest-labs/flux-schnell   # Replicate model (flux-dev for quality)
     # --- ai33.pro (Imagen-style gateway, needs AI33_API_KEY) ---

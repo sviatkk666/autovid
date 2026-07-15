@@ -12,6 +12,7 @@ Entry point: generate_project(project, cfg, generator=None, force=False) -> Proj
 from __future__ import annotations
 
 import sys
+import time
 
 from ..project import Project
 from ..providers.imagegen import ImageGenerator, get_image_generator
@@ -26,6 +27,27 @@ def _build_prompt(scene, cfg: dict) -> str:
     return (getattr(scene, field, "") or scene.image_prompt or scene.text).strip()
 
 
+def _generate_with_retry(generator, prompt, dest, orientation, *, attempts, backoff):
+    """Generate one image, retrying transient failures with exponential backoff.
+
+    Image gateways (ai33 especially) fail intermittently — soft rate-limits,
+    slow tasks, the odd 5xx. Rather than drop the scene (a hole in the video),
+    we retry so a batch run stays continuous. The final failure is re-raised so
+    the caller decides whether to keep going or stop.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            generator.generate(prompt, dest, orientation=orientation)
+            return
+        except Exception as e:  # noqa: BLE001 — any provider/network error is retryable
+            if attempt >= attempts:
+                raise
+            wait = backoff * (2 ** (attempt - 1))
+            print(f"[imagegen]   attempt {attempt}/{attempts} failed ({e}); "
+                  f"retrying in {wait:.0f}s", file=sys.stderr)
+            time.sleep(wait)
+
+
 def generate_project(
     project: Project,
     cfg: dict,
@@ -36,6 +58,13 @@ def generate_project(
     generator = generator or get_image_generator(cfg)
     orientation = "portrait" if project.aspect == "9:16" else "landscape"
     images_dir = project.dir / IMAGES_SUBDIR
+
+    gcfg = cfg.get("images", {}).get("generate", {})
+    attempts = max(1, int(gcfg.get("max_retries", 4)))
+    backoff = float(gcfg.get("retry_backoff", 5.0))
+    # Persist after each success so a long batch that's interrupted keeps its
+    # finished scenes (idempotent: a re-run skips scenes that already have an image).
+    failures: list[int] = []
 
     for scene in project.scenes:
         if only is not None and scene.id not in only:
@@ -51,9 +80,12 @@ def generate_project(
 
         dest = images_dir / f"scene_{scene.id:02d}.{generator.ext}"
         try:
-            generator.generate(prompt, dest, orientation=orientation)
-        except Exception as e:
-            print(f"[imagegen] scene {scene.id}: generation failed ({e})", file=sys.stderr)
+            _generate_with_retry(generator, prompt, dest, orientation,
+                                  attempts=attempts, backoff=backoff)
+        except Exception as e:  # noqa: BLE001 — exhausted retries for this scene
+            failures.append(scene.id)
+            print(f"[imagegen] scene {scene.id}: generation failed after {attempts} "
+                  f"attempts ({e})", file=sys.stderr)
             continue
 
         scene.image_path = dest.relative_to(project.dir).as_posix()
@@ -61,9 +93,14 @@ def generate_project(
         scene.image_license = "AI-generated"
         scene.image_attribution = ""
         scene.image_credit_url = ""
+        project.save()
         print(f"[imagegen] scene {scene.id}: {scene.image_path} [{generator.name}]",
               file=sys.stderr)
 
-    project.save()
     _write_credits(project)
+    if failures:
+        # Surface unfinished scenes so a caller (or the "fill missing visuals"
+        # button) can target just these on the next pass.
+        raise RuntimeError(f"imagegen: {len(failures)} scene(s) still missing an "
+                           f"image after retries: {failures}")
     return project

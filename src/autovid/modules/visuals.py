@@ -49,6 +49,18 @@ def realize_visuals(
     only: set[int] | None = None,
 ) -> Project:
     scenes = [s for s in project.scenes if only is None or s.id in only]
+
+    # generate_all: every frame is an AI image (via images.generate.provider,
+    # e.g. ai33) — no stock/internet search, no charts/cards. One code path,
+    # with per-scene retry inside generate_project so the run stays continuous.
+    if cfg.get("images", {}).get("generate_all"):
+        ids = {s.id for s in scenes}
+        if ids:
+            print(f"[visuals] generate_all: {len(ids)} scene(s) via AI image gen",
+                  file=sys.stderr)
+            generate_project(project, cfg, force=force, only=ids)
+        return project
+
     groups: dict[str, set[int]] = defaultdict(set)
     for s in scenes:
         # Tolerate loose stored values ("Text Card" / "text-card") -> canonical key.
